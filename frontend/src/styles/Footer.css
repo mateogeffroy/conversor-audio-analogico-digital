@@ -1,0 +1,19 @@
+.footer {
+  background-color: #6c757d;
+  color: white;
+  padding: 15px;
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.footer-integrantes {
+  margin: 0 0 0 15px;
+  font-size: 0.9em;
+}
+
+#logo-utn {
+  width: 50px;
+  height: 50px;
+}

@@ -1,0 +1,250 @@
+.conversor {
+  width: 50% 
+}
+.conversor-titulo {
+  color: #333;
+  text-align: center;
+  font-size: 1.8em;
+  margin-top: 10px;
+  margin-bottom: 20px;
+}
+.conversor-container {
+  margin-bottom: 30px;
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  text-align: center;
+}
+.container-botones {
+  display:flex;
+  flex-flow: column wrap;
+}
+.container-botones button {
+  background-color: #4A90E2;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  margin: 5px auto;
+  width: 100%;
+  max-width: 200px;
+}
+.container-botones button:hover {
+  background-color: #357ABD;
+}
+.container-archivo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  width: 100%;
+}
+.container-archivo input[type="file"] {
+  background-color: #4A90E2;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  width: 400px;
+}
+.label-boton {
+  margin-right: 10px;
+  font-weight: bold;
+}
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+button:disabled:hover {
+  background-color: #cccccc;
+}
+.conversor-container button {
+  background-color: #4A90E2;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  margin: 5px auto;
+  width: 100%;
+  max-width: 200px;
+}
+.conversor-container h3 {
+  margin: 0;
+}
+.conversor-container button:hover {
+  background-color: #357ABD;
+}
+.audio-boton {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+.audio-boton button {
+  background-color: #4A90E2;
+  margin-left: 10px;
+}
+
+select {
+  padding: 9px 10px;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+/* Estilos para el reproductor de audio */
+audio {
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* Línea de separación */
+hr {
+  border: none;
+  border-top: 1px solid #eee;
+  margin: 25px 0;
+}
+
+
+.options-row {
+  display: flex;
+  justify-content: space-around; /* Distribuye el espacio uniformemente */
+  align-items: flex-start; /* Alinea los items al tope */
+  flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea en pantallas pequeñas */
+  gap: 20px; /* Añade un espacio entre los grupos de opciones */
+}
+
+/* Ajuste al .form-group para que funcione bien dentro de flexbox */
+.form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column; /* Apila el label sobre el input/select */
+  align-items: center; /* Centra el contenido del grupo */
+  flex: 1; /* Permite que cada grupo crezca y ocupe espacio similar */
+  min-width: 180px; /* Ancho mínimo para cada grupo de opción */
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px; /* Espacio entre el label y el control */
+}
+
+/* Estilos específicos para el grupo de radio buttons */
+.radio-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px; /* Espacio entre WAV y MP3 */
+}
+
+.radio-group label {
+  font-weight: normal; /* Quitar negrita de los labels de radio button */
+  display: flex;
+  align-items: center;
+}
+
+/* Contenedor para el botón de procesar */
+.process-button-container {
+  text-align: center; /* Centra el botón */
+  margin-top: 25px; /* Espacio por encima del botón */
+}
+
+.process-button-container button {
+    padding: 12px 25px; /* Hacemos el botón un poco más grande */
+    font-size: 1.1em;
+    margin: 0;
+}
+
+.drop-zone {
+  margin-top: 15px;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  color: #aaa;
+  cursor: pointer;
+  transition: border-color 0.3s, background-color 0.3s;
+}
+
+/* Estilo cuando el usuario está arrastrando un archivo sobre la caja */
+.drop-zone.dragging {
+  border-color: #4A90E2;
+  background-color: #f0f8ff; /* Un azul muy claro */
+}
+
+/* El input de archivo real, que estará oculto */
+.file-input-hidden {
+  display: none;
+}
+
+/* El label que contiene el texto y el botón falso */
+.drop-zone-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.drop-zone-label p {
+  margin: 5px 0;
+}
+
+/* El "botón" falso dentro del label */
+.drop-zone-button {
+  display: inline-block;
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4A90E2;
+  color: white;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.drop-zone:hover .drop-zone-button {
+  background-color: #357ABD;
+}
+
+/* En tu archivo styles/Conversor.css */
+
+/* El contenedor principal para toda la sección de resultados */
+.resultados-container {
+  width: 100%;
+  text-align: center; /* Centra el h2 y el contenedor de botones */
+}
+
+/* ESTA ES LA REGLA CLAVE: el contenedor de las columnas */
+.resultados-grid {
+  display: flex;
+  justify-content: space-around; /* Espacia las columnas uniformemente */
+  align-items: flex-start; /* Alinea las columnas por la parte de arriba */
+  flex-wrap: wrap; /* Permite que se apilen en pantallas pequeñas */
+  text-align: left; /* Resetea la alineación del texto para el contenido de las columnas */
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+/* Estilo para cada una de las columnas */
+.resultado-columna {
+  flex-basis: 48%; /* Cada columna ocupa casi la mitad del espacio */
+  min-width: 300px; /* Ancho mínimo para evitar que se aplasten demasiado */
+}
+
+/* (El resto de tus estilos como .results-buttons-container, etc., se mantienen) */
