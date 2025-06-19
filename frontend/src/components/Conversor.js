@@ -65,12 +65,14 @@ function Conversor() {
   const handleStartRecording = async () => {
     resetStateForNewAudio();
     setFeedbackMessage('');
-    try { const stream = await navigator.mediaDevices.getUserMedia({audio: true});
+    try { 
+      const stream = await navigator.mediaDevices.getUserMedia({audio: true});
       const options = { mimeType: 'audio/webm;codecs=opus' };
       mediaRecorderRef.current = new MediaRecorder(stream, MediaRecorder.isTypeSupported(options.mimeType) ? options : undefined);
       audioChunksRef.current = [];
       mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
-      mediaRecorderRef.current.onstop = () => { const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType });
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType });
         setAudioBlob(blob);
         stream.getTracks().forEach(track => track.stop());
       };
@@ -172,7 +174,6 @@ function Conversor() {
 
   return (
     <div className="conversor-wrapper">
-      {/* --- Mensajes de Estado Globales --- */}
       {feedbackMessage && <p><strong>{feedbackMessage}</strong></p>}
       {isLoading && <p><strong>Procesando, por favor espera...</strong></p>}
 
@@ -188,36 +189,40 @@ function Conversor() {
             {/* 1. Usamos una clase en lugar de estilo en línea */}
             <div className="resultados-grid">
 
-                {/* 2. Damos una clase a cada columna */}
-                <div className="resultado-columna">
-                    <h4>Audio Original</h4>
-                    {originalAudioSrc && <audio src={originalAudioSrc} controls style={{width: '100%'}}/>}
-                    {originalSpectrumData && (
-                        <GraficoEspectro spectrumData={originalSpectrumData} chartTitle="Espectro Original" />
-                    )}
-                </div>
+              {/* 2. Damos una clase a cada columna */}
+              <div className="resultado-columna">
+                <h4>Audio Original</h4>
+                {originalAudioSrc && <audio src={originalAudioSrc} controls style={{width: '100%'}}/>}
+                {originalSpectrumData && (
+                  <GraficoEspectro spectrumData={originalSpectrumData} chartTitle="Espectro Original" />
+                )}
+              </div>
 
-                <div className="resultado-columna">
-                    <h4>Audio Procesado</h4>
-                    <audio src={processedAudioPreviewSrc} controls style={{width: '100%'}}/>
-                    {processedSpectrumData && (
-                        <GraficoEspectro spectrumData={processedSpectrumData} chartTitle="Espectro Procesado" />
-                    )}
-                </div>
-                
+              <div className="resultado-columna">
+                <h4>Audio Procesado</h4>
+                <audio src={processedAudioPreviewSrc} controls style={{width: '100%'}}/>
+                {processedSpectrumData && (
+                  <GraficoEspectro spectrumData={processedSpectrumData} chartTitle="Espectro Procesado" />
+                )}
+              </div>
+              
             </div>
 
             <div className='results-buttons-container'>
-              <button onClick={handleDownloadProcessedAudio}>
+              {/* Aplicamos la clase conversor-boton aquí */}
+              <button className='conversor-boton' onClick={handleDownloadProcessedAudio}>
                 Descargar Audio Procesado ({processedAudioInfo ? processedAudioInfo.filename.split('.').pop().toUpperCase() : ''})
               </button>
+              {/* Este ya tiene la clase secondary-button */}
               <button onClick={handleClearAudio} className="secondary-button">
                 Procesar Otro Audio
               </button>
             </div>
           </section>
       )}
-
+      {/* Si no esta cargando audio y no hay audio previsualizado */}
+      {/* Si no hay audio muestra los botones de grabar y subir archivo */}
+      {/* Si hay audio muestra las opciones de coneversion */}
       {!isLoading && !processedAudioPreviewSrc && (
         <>
           {!hasAudio ? (
@@ -225,11 +230,13 @@ function Conversor() {
               <h2 className='conversor-titulo'>Subir o Grabar Audio</h2>
               <div className='container-botones'>
                 <label htmlFor="conversor-boton" className='label-boton'>Grabar audio:</label>
-                <button className='conversor-boton' onClick={handleStartRecording} disabled={isRecording}>
-                  {isRecording ? 'Grabando...' : 'Iniciar Grabación'}
-                </button>
-                <button onClick={handleStopRecording} disabled={!isRecording}>
-                  Detener Grabación
+                <button
+                  className='conversor-boton'
+                  onClick={isRecording ? handleStopRecording : handleStartRecording}
+                  // ¡Eliminamos la propiedad 'disabled={isRecording}' de aquí!
+                  style={{backgroundColor: isRecording ? 'red' : '#4A90E2'}}
+                >
+                  {isRecording ? 'Detener Grabación' : 'Iniciar Grabación'}
                 </button>
               </div>
               <hr style={{margin: '15px 0'}}/>
@@ -260,9 +267,12 @@ function Conversor() {
                 {audioBlob && (
                   <>
                     <p>Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</p>
-                    <div className='audio-boton'>
-                      <audio src={originalAudioSrc} controls />
-                      <button className='conversor-boton' onClick={handleClearAudio}>
+                    {/* Contenedor mejorado para el audio grabado */}
+                    <div className='audio-player-wrapper'> {/* Nuevo wrapper para el reproductor y botón */}
+                      <div className='audio-player-container'>
+                        <audio src={originalAudioSrc} controls />
+                      </div>
+                      <button className='conversor-boton secondary-button' onClick={handleClearAudio}>
                         Cambiar Audio
                       </button>
                     </div>
@@ -270,9 +280,12 @@ function Conversor() {
                 )}
                 {uploadedFile && (
                   <>
-                    <div className='audio-boton'>
-                      <audio src={originalAudioSrc} controls />
-                      <button className='conversor-boton' onClick={handleClearAudio}>
+                    {/* Contenedor mejorado para el audio subido */}
+                    <div className='audio-player-wrapper'> {/* Nuevo wrapper para el reproductor y botón */}
+                      <div className='audio-player-container'>
+                        <audio src={originalAudioSrc} controls />
+                      </div>
+                      <button className='conversor-boton secondary-button' onClick={handleClearAudio}>
                         Cambiar Audio
                       </button>
                     </div>
@@ -298,19 +311,19 @@ function Conversor() {
                   <div className="form-group">
                     <label>Formato de Exportación:</label>
                     <div className='radio-group'>
-                        <label>
-                            <input type="radio" name="exportFormat" value="wav" checked={exportFormat === 'wav'} onChange={(e) => setExportFormat(e.target.value)} /> WAV
-                        </label>
-                        <label>
-                            <input type="radio" name="exportFormat" value="mp3" checked={exportFormat === 'mp3'} onChange={(e) => setExportFormat(e.target.value)} /> MP3
-                        </label>
+                      <label>
+                        <input type="radio" name="exportFormat" value="wav" checked={exportFormat === 'wav'} onChange={(e) => setExportFormat(e.target.value)} /> WAV
+                      </label>
+                      <label>
+                        <input type="radio" name="exportFormat" value="mp3" checked={exportFormat === 'mp3'} onChange={(e) => setExportFormat(e.target.value)} /> MP3
+                      </label>
                     </div>
                   </div>
-                </div>           
+                </div>          
                 <div className="process-button-container">
-                    <button onClick={handleSubmitAudio}>
-                        Procesar Audio
-                    </button>
+                  <button onClick={handleSubmitAudio}>
+                    Procesar Audio
+                  </button>
                 </div>
               </div>
             </>

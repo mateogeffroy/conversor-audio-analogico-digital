@@ -8,9 +8,8 @@ import numpy as np
 import base64
 import traceback
 
+#Configuracion del entorno
 app = Flask(__name__)
-
-# Configuración de CORS
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 if FRONTEND_URL:
     CORS(app, resources={r"/api/*": {"origins": [FRONTEND_URL]}})
@@ -56,7 +55,7 @@ def upload_audio():
             if not file_extension and hasattr(file, 'mimetype') and 'webm' in file.mimetype:
                  file_extension = ".webm"
             elif not file_extension:
-                 file_extension = ".tmp" # Fallback
+                 file_extension = ".tmp"
             
             temp_filename += file_extension
             
