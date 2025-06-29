@@ -1,6 +1,3 @@
-body {
-  overflow-x: hidden; /* Oculta la barra de desplazamiento horizontal */
-}
 .conversor {
   width: 50% 
 }
@@ -252,122 +249,28 @@ hr {
 
 /* (El resto de tus estilos como .results-buttons-container, etc., se mantienen) */
 
-/* Estilos para el botón principal (si no los tienes aún, o para referencia) */
-.conversor-boton {
-  background-color: #4A90E2; /* Un azul agradable */
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  transition: background-color 0.3s ease; /* Transición suave para hover */
+.loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3); /* Color del borde del spinner (más claro) */
+  border-top: 4px solid white; /* Color del borde superior (visible) */
+  border-radius: 50%; /* Lo hace redondo */
+  width: 16px; /* Ancho del spinner */
+  height: 16px; /* Alto del spinner */
+  animation: spin 1s linear infinite; /* Animación de giro */
+  display: inline-block; /* Permite que el spinner y el texto estén en la misma línea */
+  vertical-align: middle; /* Alinea el spinner verticalmente con el texto */
+  margin-right: 8px; /* Espacio entre el spinner y el texto "Cargando..." */
 }
 
-.conversor-boton:hover {
-  background-color: #357ABD; /* Un azul más oscuro al pasar el ratón */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Estilos para el botón secundario */
-.secondary-button {
-  background-color: #6c757d; /* Un gris suave */
-  color: white;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 1em;
-  margin-left: 10px; /* Para separarlo del botón principal */
-  transition: background-color 0.3s ease;
+.process-button-container button:disabled {
+  opacity: 0.8; /* Ligeramente transparente */
+  pointer-events: none; /* Desactiva eventos del ratón */
 }
 
-.secondary-button:hover {
-  background-color: #5a6268; /* Un gris más oscuro al pasar el ratón */
-}
-
-/* Estilos para el contenedor de botones de resultados */
-.results-buttons-container {
-    margin-top: 20px;
-    display: flex; /* Para que los botones estén en fila */
-    justify-content: center; /* Para centrarlos */
-    gap: 15px; /* Espacio entre los botones */
-}
-
-/* Opcional: Estilos para el contenedor de resultados general */
-.resultados-container {
-    background-color: #f8f9fa; /* Fondo claro para la sección */
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-top: 20px;
-}
-
-.resultados-grid {
-    display: flex;
-    flex-flow: row wrap; /* Permite que las columnas se ajusten en pantallas pequeñas */
-    justify-content: space-around; /* Distribuye las columnas uniformemente */
-    align-items: flex-start; /* Alinea las columnas por la parte de arriba */
-}
-
-.resultado-columna {
-    text-align: center;
-    padding: 15px;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    background-color: white;
-    flex-basis: 800px;
-}
-
-.resultado-columna h4 {
-    color: #333;
-    margin-bottom: 10px;
-}
-
-/* Contenedor general para el reproductor de audio y el botón */
-.audio-player-wrapper {
-    display: flex; /* Habilitar flexbox para alinear elementos */
-    align-items: center; /* Centrar verticalmente */
-    justify-content: center; /* Centrar horizontalmente */
-    gap: 15px; /* Espacio entre el reproductor y el botón */
-    margin-top: 20px; /* Espacio superior */
-    margin-bottom: 20px; /* Espacio inferior */
-    flex-wrap: wrap; /* Permitir que los elementos se envuelvan en pantallas pequeñas */
-}
-
-/* Estilos para el contenedor del reproductor de audio */
-.audio-player-container {
-    background-color: #ffffff; /* Fondo blanco */
-    border: 1px solid #e0e0e0; /* Borde suave */
-    border-radius: 10px; /* Bordes redondeados */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Sombra sutil */
-    padding: 10px 15px; /* Relleno interno */
-    width: clamp(280px, 80%, 450px); /* Ancho responsivo */
-    /* El 100% de width en el audio hace que ocupe todo el espacio de este contenedor */
-}
-
-/* Asegura que el elemento de audio ocupe el 100% del ancho de su contenedor */
-.audio-player-container audio {
-    width: 100%;
-    /* Opcional: Puedes intentar estilizar los controles nativos, aunque es limitado */
-    /* Por ejemplo, para Webkit/Chrome/Safari */
-    -webkit-appearance: none;
-    background: #f1f3f4; /* Un tono más claro para el fondo del reproductor */
-    border-radius: 5px;
-    outline: none;
-}
-
-/* Opcional: Estilos para la barra de progreso y volumen si el navegador lo permite */
-/* Esto puede variar mucho entre navegadores y es experimental */
-.audio-player-container audio::-webkit-media-controls-panel {
-  background-color: #f1f3f4;
-  border-radius: 5px;
-}
-
-.audio-player-container audio::-webkit-media-controls-play-button,
-.audio-player-container audio::-webkit-media-controls-timeline,
-.audio-player-container audio::-webkit-media-controls-current-time-display,
-.audio-player-container audio::-webkit-media-controls-time-remaining-display,
-.audio-player-container audio::-webkit-media-controls-volume-slider {
-  /* Puedes aplicar algunos estilos aquí, pero el control es limitado */
-  color: #4A90E2; /* Color de íconos */
+.process-button-container button:disabled:hover {
+  background-color: #7abfe7; /* Mantener el mismo color al pasar el ratón cuando está deshabilitado */
 }

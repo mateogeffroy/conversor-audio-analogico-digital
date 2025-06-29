@@ -1,10 +1,10 @@
 import React from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import './styles/App.css';
 import Conversor from './components/Conversor';
 import Footer from './components/Footer';
 import Header from './components/Header';
-import Home from './components/Home';
+import Documentacion from './components/Documentacion';
 
 function App() {
   return (
@@ -12,8 +12,8 @@ function App() {
       <Header/>
       <main className='app-contenido-principal'>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/conversor" element={<Conversor />} />
+          <Route path="/" element={<Conversor />} />
+          <Route path="/documentacion" element={<Documentacion />} />
         </Routes>
       </main>
       <Footer/>

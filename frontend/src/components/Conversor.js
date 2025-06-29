@@ -109,6 +109,7 @@ function Conversor() {
   };
 
   const handleSubmitAudio = async () => {
+    if (isLoading) return; // Evita múltiples envíos mientras se procesa
     setIsLoading(true);
     resetStateForNewAudio();
     let audioData = audioBlob || uploadedFile;
@@ -322,7 +323,14 @@ function Conversor() {
                 </div>          
                 <div className="process-button-container">
                   <button onClick={handleSubmitAudio}>
-                    Procesar Audio
+                    {!isLoading ? (
+                      "Procesar Audio"
+                    ) : (
+                      <>
+                        <span className="loading-spinner"></span>
+                        Procesando...
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
