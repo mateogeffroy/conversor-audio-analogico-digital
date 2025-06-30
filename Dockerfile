@@ -1,31 +1,40 @@
 # Dockerfile
 
-FROM python:3.13
+# Usamos una imagen de Miniconda/Mamba que ya incluye Python y las librerías científicas optimizadas
+# Esto resuelve los problemas de compilación de numpy, scipy, librosa, y Numba/LLVMLite.
+# Recomiendo 'mambaorg/micromamba:latest-debian' o 'continuumio/miniconda3:latest'
+FROM mambaorg/micromamba:latest-debian
 
-# Instala herramientas esenciales de build, gfortran, ffmpeg,
-# y las dependencias de OpenBLAS/LAPACK y pkg-config
-# **En este punto, NO se habían añadido las dependencias de GStreamer**
+# Instala SOLO las dependencias de APT que no vienen con Conda (principalmente FFmpeg y GStreamer)
+# micromamba ya viene con 'build-essential' virtualmente, y maneja python, gfortran, etc.
+# libsndfile1-dev es para soundfile
 RUN apt-get update -y && \
     apt-get install -y \
-    build-essential \
-    gfortran \
     ffmpeg \
-    libopenblas-dev \
-    pkg-config \
-    cmake && \
+    libsndfile1-dev \
+    libgstreamer1.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-plugins-bad \
+    gstreamer1.0-plugins-ugly \
+    gstreamer1.0-libav \
+    gstreamer1.0-tools \
+    gstreamer1.0-x && \
     rm -rf /var/lib/apt/lists/*
+
+# Crea un entorno Conda/Mamba y activa el entorno base para instalar Python libs
+# Mamba es mucho más rápido que Conda para resolver entornos
+RUN micromamba activate base && \
+    micromamba install -y python=3.13 && \
+    micromamba clean --all --yes
 
 WORKDIR /app
 
-# Primero, actualiza pip y asegúrate de que setuptools y wheel estén presentes
-# Esto es CRÍTICO para la compilación de paquetes con pyproject.toml
-# Esta línea se añadió para resolver el error 'setuptools.build_meta'
-RUN pip install --upgrade pip setuptools wheel
-
+# Copia requirements.txt y usa pip (dentro del entorno micromamba)
 COPY backend/requirements.txt ./requirements.txt
-# Luego, instala las dependencias de tu aplicación
-RUN pip install --no-cache-dir -r requirements.txt
+RUN micromamba run -n base pip install --no-cache-dir -r requirements.txt
 
+# Copia el resto del código de tu aplicación
 COPY backend/ .
 
 EXPOSE 5000
