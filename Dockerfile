@@ -1,6 +1,6 @@
 # Dockerfile
 
-FROM python:3.13
+FROM python:3.12-slim
 
 # Instala herramientas esenciales de build, gfortran, ffmpeg,
 # y las dependencias de OpenBLAS/LAPACK y pkg-config
