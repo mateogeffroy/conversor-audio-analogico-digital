@@ -5,36 +5,23 @@ import { useNavigate } from 'react-router-dom';
 
 function Conversor() {
   //Estados para el manejo dinamico de la webapp
-
-  //Indica si el microfono esta grabando
   const [isRecording, setIsRecording] = useState(false);
-  //Almacena el audio grabado como blob y el archivo de audio subido respectivamente
   const [audioBlob, setAudioBlob] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
-  //Indica el formato de exportacion del audio procesado (seteado por default en .wav)
   const [exportFormat, setExportFormat] = useState('wav');
-  //Indica la tasa de muestreo y la profundidad de bits del audio procesado
   const [targetSampleRate, setTargetSampleRate] = useState('');
   const [targetBitDepth, setTargetBitDepth] = useState('');
-  //Referencia el media recorder del navegador
   const mediaRecorderRef = useRef(null);
-  //Almacena los fragmentos de audio grabados
   const audioChunksRef = useRef([]);
-  //Indica si la aplicacion esta en proceso de carga
   const [isLoading, setIsLoading] = useState(false);
-  //Estados para manejar los datos del espectro y la previsualizacion del audio procesado
   const [originalSpectrumData, setOriginalSpectrumData] = useState(null);
   const [processedSpectrumData, setProcessedSpectrumData] = useState(null);
   const [processedAudioPreviewSrc, setProcessedAudioPreviewSrc] = useState(null);
   const [processedAudioInfo, setProcessedAudioInfo] = useState(null);
-  //Manejo de arrastrar y soltar archivos
   const [isDragging, setIsDragging] = useState(false);
-  //indica si se esta procesando el audio
   const [isProcessing, setIsProcessing] = useState(false);
-  //Hook para navegar entre rutas
   const navigate = useNavigate();
 
-  //Constantes para las opciones de tasa de muestreo y profundidad de bits
   const sampleRates = [
     { value: '', label: 'Original' }, { value: '8000', label: '8 kHz' }, { value: '16000', label: '16 kHz' }, { value: '44100', label: '44.1 kHz' }, { value: '96000', label: '96 kHz' },
   ];
@@ -42,9 +29,6 @@ function Conversor() {
     { value: '', label: 'Original' }, { value: '8', label: '8 bits' }, { value: '16', label: '16 bits' }, { value: '24', label: '24 bits' },
   ];
 
-  //Funciones para manejar los eventos
-
-  //Maneja el evento de arrastrar y soltar archivos
   const handleDragOver = (event) => {
     event.preventDefault();
     setIsDragging(true);
@@ -70,45 +54,71 @@ function Conversor() {
     }
   };
 
-  //Restablece los estados relacionados con el procesamiento y los resultados del audio
   const resetStateForNewAudio = () => {
     setIsLoading(false);
     setOriginalSpectrumData(null);
     setProcessedSpectrumData(null);
     setProcessedAudioPreviewSrc(null);
     setProcessedAudioInfo(null);
+    // Asegurarse de que el procesamiento también se resetee
+    setIsProcessing(false);
   };
 
-  //Inicia y detiene la grabacion de audio desde el microfono
   const handleStartRecording = async () => {
-    resetStateForNewAudio();
+    // Es crucial detener cualquier stream anterior antes de solicitar uno nuevo
+    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+    resetStateForNewAudio(); // Limpiar estados anteriores ANTES de grabar
+
     try {
+      // Solicitar stream del micrófono
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const options = { mimeType: 'audio/webm;codecs=opus' };
-      mediaRecorderRef.current = new MediaRecorder(stream, MediaRecorder.isTypeSupported(options.mimeType) ? options : undefined);
-      audioChunksRef.current = [];
-      mediaRecorderRef.current.ondataavailable = (event) => audioChunksRef.current.push(event.data);
+      // Guardar el stream en la referencia para poder detenerlo más tarde
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // Define options aquí mismo
+
+      audioChunksRef.current = []; // Limpiar chunks anteriores
+      
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType });
         setAudioBlob(blob);
-        stream.getTracks().forEach(track => track.stop()); // Detiene el stream del micrófono
+        // Detener el stream del micrófono una vez que la grabación ha finalizado
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false); // Asegurarse de que el estado de grabación se actualice
       };
+
+      mediaRecorderRef.current.onerror = (event) => {
+        console.error("MediaRecorder error:", event.error);
+        setIsRecording(false);
+        // También detén el stream en caso de error
+        stream.getTracks().forEach(track => track.stop());
+        alert("Error al grabar el audio. Asegúrate de que el micrófono esté disponible.");
+      };
+
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      setAudioBlob(null);
-      setUploadedFile(null);
+      // No limpiar audioBlob/uploadedFile aquí, ya se hizo en resetStateForNewAudio()
     } catch (err) {
-      console.error("Error mic:", err);
-    }
-  };
-  const handleStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
+      console.error("Error al acceder al micrófono:", err);
+      setIsRecording(false); // Asegúrate de restablecer el estado si falla el acceso
+      alert("No se pudo acceder al micrófono. Por favor, asegúrate de haber otorgado los permisos.");
     }
   };
 
-  //Maneja la seleccion de un archivo de audio mediante el input
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+      mediaRecorderRef.current.stop();
+      // El setIsRecording(false) y stream.getTracks().forEach(track => track.stop());
+      // ahora se manejan en el onstop del MediaRecorder, lo que es más robusto.
+    }
+  };
+
   const handleFileChange = (event) => {
     resetStateForNewAudio();
     const file = event.target.files[0];
@@ -118,27 +128,50 @@ function Conversor() {
     }
   };
 
-  //Limpia el audio subido o grabado volviendo al estado inicial
   const handleClearAudio = () => {
+    // Asegurarse de detener cualquier grabación activa antes de limpiar
+    if (isRecording && mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
+        mediaRecorderRef.current.stop();
+    }
+    // Detener cualquier stream del micrófono que pueda estar activo (después de grabación)
+    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) { // Check for stream property
+        mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+
     setAudioBlob(null);
     setUploadedFile(null);
     resetStateForNewAudio();
   };
 
-  //Envia el audio al backend para su procesamiento
   const handleSubmitAudio = async () => {
-    //Evita enviar si ya se está procesando o cargando
-    if (isLoading) return;
-    setIsLoading(true);
-    
+    if (isLoading || isProcessing) return; // Evita envíos múltiples si ya se está cargando o procesando
+    setIsLoading(true); // Activa el estado de carga general
+    setIsProcessing(true); // Activa el estado de procesamiento específico
+
     let audioData = audioBlob || uploadedFile;
     if (!audioData) {
+      // Puedes añadir un mensaje al usuario aquí
+      alert("Por favor, graba o selecciona un archivo de audio antes de procesar.");
+      setIsLoading(false);
+      setIsProcessing(false);
       return;
     }
 
-    const inputFileName = audioBlob ? `grabacion.webm` : uploadedFile.name;
+    // Asegurarse de que el inputFileName tenga una extensión
+    let inputFileName;
+    if (audioBlob) {
+        // Para grabaciones, usa un nombre con extensión webm
+        inputFileName = `grabacion_${Date.now()}.webm`;
+    } else if (uploadedFile) {
+        inputFileName = uploadedFile.name;
+    } else {
+        // Esto no debería pasar si audioData ya fue verificado
+        return;
+    }
+
+
     const formData = new FormData();
-    formData.append('audio_file', audioData, inputFileName);
+    formData.append('audio_file', audioData, inputFileName); // Asegúrate de que el tercer argumento (filename) tenga extensión
     formData.append('export_format', exportFormat);
     if (targetSampleRate) {
       formData.append('sample_rate', targetSampleRate);
@@ -157,23 +190,42 @@ function Conversor() {
       if (response.ok) {
         setOriginalSpectrumData(result.original_spectrum);
         setProcessedSpectrumData(result.processed_spectrum);
-        const audioSrc = `data:${result.processed_audio_mimetype};base64,${result.processed_audio_base64}`;
+        // Usar processed_audio_url_supabase para la previsualización si existe,
+        // de lo contrario, usar base64 (útil si el backend no sube a Supabase aún)
+        const audioSrc = result.processed_audio_url_supabase || `data:${result.processed_audio_mimetype};base64,${result.processed_audio_base64}`;
         setProcessedAudioPreviewSrc(audioSrc);
         setProcessedAudioInfo({ base64: result.processed_audio_base64, mimetype: result.processed_audio_mimetype, filename: result.download_filename });
-        setIsProcessing(false);
+        // isProcessing se setea a false en el finally
       } else {
+        // Mostrar el error del servidor al usuario
+        alert(`Error del servidor: ${result.error || 'Ocurrió un error desconocido.'}`);
         throw new Error(result.error || 'Error del servidor.');
       }
     } catch (err) {
-      console.error("Error:", err);
+      console.error("Error en handleSubmitAudio:", err);
+      // Solo alerta un error general si no se alertó uno específico del servidor
+      if (!err.message.startsWith("Error del servidor:")) {
+          alert("Ocurrió un error al procesar el audio. Por favor, inténtalo de nuevo.");
+      }
+      setProcessedAudioPreviewSrc(null); // Limpiar preview si hay error
+      setOriginalSpectrumData(null);
+      setProcessedSpectrumData(null);
+      setProcessedAudioInfo(null);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Siempre desactiva el estado de carga
+      setIsProcessing(false); // Siempre desactiva el estado de procesamiento
     }
   };
 
-  //Funcion para descargar el audio procesado
   const handleDownloadProcessedAudio = () => {
     if (!processedAudioInfo) return;
+    // Si el audio está en Supabase Storage, no necesitas el base64 para descargar.
+    // Simplemente abre la URL en una nueva pestaña o usa un link para descargar.
+    // Sin embargo, si quieres mantener el flujo de descarga de base64, está bien.
+    // Si usas la URL de Supabase para descargar, asegúrate de que sea pública y
+    // que el navegador la maneje como descarga (a veces abre en nueva pestaña).
+
+    // Opción 1: Descargar desde Base64 (como lo tienes)
     const byteCharacters = atob(processedAudioInfo.base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
@@ -190,17 +242,26 @@ function Conversor() {
     a.click();
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
+
+    // Opción 2: Si el backend ya devolviera la URL de descarga directa desde Supabase Storage
+    // if (processedAudioInfo.download_url_from_supabase) {
+    //     const a = document.createElement('a');
+    //     a.href = processedAudioInfo.download_url_from_supabase;
+    //     a.download = processedAudioInfo.filename; // Esto podría no forzar la descarga en todos los casos
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    // }
   };
+
   const originalAudioSrc = audioBlob ? URL.createObjectURL(audioBlob) : (uploadedFile ? URL.createObjectURL(uploadedFile) : null);
-  //Indica si hay un audio grabado o subido
   const hasAudio = audioBlob || uploadedFile;
 
   return (
     <div className="conversor-wrapper">
       {!isLoading && !processedAudioPreviewSrc && (
         <>
-          {/*-----------------------------------------------------------------1) Renderizado de la interfaz para grabar o subir audio----------------------------------------------------------------------------*/
-          !hasAudio ? (
+          {!hasAudio ? (
             <div className="conversor-container">
               <h2 className='conversor-titulo'>Subir o Grabar Audio</h2>
               <div className='conversor-container-botones'>
@@ -235,9 +296,9 @@ function Conversor() {
                   <span className="conversor-drop-zone-button">Selecciona un archivo</span>
                 </label>
               </div>
-              <div className='container-botones' style={{marginBottom: '20px'}}>
+              <div className='conversor-container-botones' style={{marginBottom: '20px'}}>
                 <button
-                  className='conversor-boton secondary-button' // Puedes crear una clase CSS para secondary-button
+                  className='conversor-boton conversor-boton-secundario' // Usa la clase de botón secundario que ya tienes en CSS
                   onClick={() => navigate('/biblioteca')}
                   disabled={isLoading}
                 >
@@ -246,7 +307,6 @@ function Conversor() {
               </div>
             </div>
           ) : (
-            /*----------------------------------------------------2) Renderizado de la interfaz para seleccionar las opciones de conversion---------------------------------------------------------------*/
             <>
               <div className="conversor-container">
                 {audioBlob && (
@@ -311,15 +371,13 @@ function Conversor() {
           )}
         </>
       )}
-      {/*----------------------------------------------------3) Renderizado de la interfaz de procesamiento---------------------------------------------------------------*/
-      isProcessing && (
+      {isProcessing && (
         <div className="conversor-processing-overlay">
           <span className="conversor-loading-spinner"></span>
           <p className="conversor-processing-text"><strong>Procesando audio, por favor espera...</strong></p>
         </div>
       )}
-      {/*----------------------------------------------------4) Renderizado de la interfaz de resultados del procesamiento---------------------------------------------------------------*/
-      !isLoading && processedAudioPreviewSrc && (
+      {!isLoading && processedAudioPreviewSrc && (
         <section className="conversor-resultados-container">
           <h2 className='conversor-titulo'>Resultados del Procesamiento</h2>
 
