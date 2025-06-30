@@ -6,3 +6,5 @@ apt-get install -y ffmpeg
 
 echo "Instalando dependencias de Python"
 pip install --no-cache-dir -r requirements.txt
+
+echo "Instalacion de dependencias de python completada
