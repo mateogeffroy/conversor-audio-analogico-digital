@@ -5,7 +5,7 @@ RUN apt-get update -y && \
     build-essential \
     gfortran \
     ffmpeg \
-    libatlas-base-dev \
+    libopenblas-dev \
     pkg-config \
     cmake && \
     rm -rf /var/lib/apt/lists/*
