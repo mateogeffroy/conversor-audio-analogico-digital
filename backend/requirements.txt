@@ -1,4 +1,3 @@
-# Core Flask y sus dependencias
 blinker==1.9.0
 click==8.2.1
 colorama==0.4.6
@@ -11,7 +10,7 @@ MarkupSafe==3.0.2
 packaging==25.0
 Werkzeug==3.1.3
 
-# Librerías de Audio
+# Librerías de Audio (DEJA ESTAS VERSIONES FIJAS)
 pydub==0.25.1
 librosa==0.10.2
 numpy==1.26.4
@@ -20,9 +19,7 @@ soundfile==0.12.1
 
 # Bases de datos y Variables de entorno
 supabase==2.16.0
-python-dotenv==1.0.1 # Versión reciente y estándar
+python-dotenv==1.0.1
 
-# audioop-lts - NECESITA Python >=3.13, la re-incluimos
+# audioop-lts - NECESITA Python >=3.13, así que mantenla si usas Python 3.13
 audioop-lts==0.2.1
-llvmlite==0.42.0
-numba==0.61.2
