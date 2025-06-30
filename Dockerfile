@@ -1,10 +1,5 @@
-# Dockerfile
-
 FROM python:3.13
 
-# Instala herramientas esenciales de build, gfortran, ffmpeg,
-# y las dependencias de OpenBLAS/LAPACK y pkg-config
-# **NUEVAS ADICIONES para audioread/gstreamer**
 RUN apt-get update -y && \
     apt-get install -y \
     build-essential \
@@ -32,4 +27,4 @@ COPY backend/ .
 
 EXPOSE 5000
 
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"] 
+CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000"]
