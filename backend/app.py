@@ -10,11 +10,11 @@ import traceback
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
-import soundfile as sf
+import soundfile as sf # Necesario para la carga del espectro procesado
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-#Configuracion del entorno
+# Configuracion del entorno
 app = Flask(__name__)
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 if FRONTEND_URL:
@@ -53,10 +53,9 @@ def upload_audio():
         return jsonify({"error": "No se seleccionó ningún archivo"}), 400
 
     export_format_req = request.form.get('formato_exportacion', 'wav').lower()
-    target_sample_rate_str = request.form.get('sample_rate') # Esto viene del frontend con nombre 'sample_rate'
-    target_bit_depth_str = request.form.get('bit_depth')     # Esto viene del frontend con nombre 'bit_depth'
+    target_sample_rate_str = request.form.get('sample_rate')
+    target_bit_depth_str = request.form.get('bit_depth')
 
-    # Convertir a int solo si no son None
     target_sample_rate_int = int(target_sample_rate_str) if target_sample_rate_str else None
     target_bit_depth_int = int(target_bit_depth_str) if target_bit_depth_str else None
 
@@ -77,41 +76,53 @@ def upload_audio():
     file.save(temp_filename)
 
     try:
+        # --- CARGA DEL AUDIO ORIGINAL PARA ESPECTRO ---
+        # Usar pydub para cargar el archivo original desde disco (maneja varios formatos via FFmpeg)
         audio_pydub_original = AudioSegment.from_file(temp_filename)
+
+        # Exportar a un buffer WAV para que librosa pueda leerlo de forma confiable
         original_buffer_for_librosa = io.BytesIO()
         audio_pydub_original.export(original_buffer_for_librosa, format="wav")
-        original_buffer_for_librosa.seek(0)
+        original_buffer_for_librosa.seek(0) # Rebobinar el buffer
+
+        # Ahora, librosa puede cargar el WAV del buffer
+        # Esto debería evitar el problema de 'aifc' al no usar directamente audioread en formatos complejos
         y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True)
         spectrum_original = get_spectrum_data(y_original, sr_original)
-        audio_pydub = audio_pydub_original
 
-        audio_pydub = AudioSegment.from_file(temp_filename)
+        # La instancia de AudioSegment para el procesamiento será la que cargamos
+        processed_audio_pydub = audio_pydub_original
 
-        processed_audio_pydub = audio_pydub
-
-        if target_sample_rate_int: # Usar el int directamente aquí
+        # --- APLICAR OPCIONES DE CONVERSIÓN ---
+        if target_sample_rate_int:
             if processed_audio_pydub.frame_rate != target_sample_rate_int:
                 processed_audio_pydub = processed_audio_pydub.set_frame_rate(target_sample_rate_int)
         
-        if target_bit_depth_int: # Usar el int directamente aquí
+        if target_bit_depth_int:
             target_sample_width_bytes = target_bit_depth_int // 8
+            # pydub soporta 1, 2, 4 bytes por muestra. 3 bytes (24 bits) es especial
             if target_sample_width_bytes in [1, 2, 4] and processed_audio_pydub.sample_width != target_sample_width_bytes:
                 processed_audio_pydub = processed_audio_pydub.set_sample_width(target_sample_width_bytes)
             elif target_bit_depth_int == 24:
-                if processed_audio_pydub.sample_width != 3:
+                if processed_audio_pydub.sample_width != 3: # pydub usa 3 para 24 bits
                     processed_audio_pydub = processed_audio_pydub.set_sample_width(3)
 
+        # --- GENERAR ESPECTRO DEL AUDIO PROCESADO ---
+        # Exportar el audio procesado a un buffer WAV para que librosa pueda leerlo
         processed_buffer_for_librosa = io.BytesIO()
         processed_audio_pydub.export(processed_buffer_for_librosa, format="wav")
-        processed_buffer_for_librosa.seek(0)
+        processed_buffer_for_librosa.seek(0) # Rebobinar el buffer
+
+        # Usar soundfile para cargar el WAV del buffer para el espectro (más fiable)
         audio_data_processed, sr_processed = sf.read(processed_buffer_for_librosa)
         y_processed = librosa.to_mono(audio_data_processed) if audio_data_processed.ndim > 1 else audio_data_processed
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
+        # --- EXPORTAR AUDIO FINAL ---
         export_final_buffer = io.BytesIO()
         final_mimetype = ""
         final_download_filename_base = f"processed_{processed_audio_pydub.frame_rate // 1000}kHz_{processed_audio_pydub.sample_width * 8}bit"
-
+        
         if export_format_req == "wav":
             processed_audio_pydub.export(export_final_buffer, format="wav")
             final_mimetype = "audio/wav"
@@ -126,34 +137,31 @@ def upload_audio():
         export_final_buffer.seek(0)
         audio_data_to_upload = export_final_buffer.read()
 
+        # --- Guardar en Supabase Storage ---
         supabase_file_name = f"{uuid.uuid4().hex}.{export_format_req}"
         path_in_bucket = f"public/{supabase_file_name}"
 
-        # Usar el nombre del bucket 'audios-convertidos'
         response_upload = supabase.storage.from_("audios-convertidos").upload(
             file=audio_data_to_upload,
             path=path_in_bucket,
             file_options={"content-type": final_mimetype}
         )
 
-        # Construcción de la URL pública directamente, asumiendo éxito si no hay excepción
-        # Usar el nombre del bucket 'audios-convertidos' en la URL
         public_audio_url = f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/{path_in_bucket}"
         
         app.logger.info(f"Archivo subido a Supabase Storage. URL: {public_audio_url}")
 
+        # --- Guardar metadatos en Supabase Database ---
         data_to_insert = {
             "nombre_archivo_original": nombre_archivo_original,
             "formato_exportacion": export_format_req,
-            "frecuencia_muestreo": target_sample_rate_int, # Guardar como int o None
-            "profundidad_de_bits": target_bit_depth_int,     # Guardar como int o None
+            "frecuencia_muestreo": target_sample_rate_int,
+            "profundidad_de_bits": target_bit_depth_int,
             "url_audio_procesado": public_audio_url,
             "espectro_original": spectrum_original,
             "espectro_modificado": spectrum_processed,
-            # No se incluye "fecha_creacion" aquí; Supabase lo maneja automáticamente
         }
 
-        # Usar el nombre de la tabla 'audios_convertidos'
         response_insert = supabase.table("audios_convertidos").insert(data_to_insert).execute()
 
         if response_insert.data:
@@ -184,11 +192,9 @@ def upload_audio():
 @app.route('/api/library', methods=['GET'])
 def get_converted_audios():
     try:
-        # Usar el nombre de la tabla 'audios_convertidos'
-        # Y ordenar por 'fecha_creacion' que es el nombre de la columna por defecto en Supabase
         response = supabase.table("audios_convertidos") \
             .select("*") \
-            .order("fecha_creacion", desc=True) \
+            .order("created_at", desc=True) \
             .limit(5) \
             .execute()
 
@@ -196,8 +202,8 @@ def get_converted_audios():
             audios = response.data
             return jsonify(audios), 200
         else:
-            return jsonify([]), 200
-           
+            return jsonify([]), 200 
+
     except Exception as e:
         app.logger.error(f"Error al obtener la biblioteca de audios: {str(e)}")
         app.logger.error(traceback.format_exc())
