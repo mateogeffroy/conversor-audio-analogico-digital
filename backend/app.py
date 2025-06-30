@@ -10,6 +10,7 @@ import traceback
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
+import soundfile as sf
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
@@ -76,7 +77,9 @@ def upload_audio():
     file.save(temp_filename)
 
     try:
-        y_original, sr_original = librosa.load(temp_filename, sr=None, mono=True) 
+        audio_data, sr_original = sf.read(temp_filename)
+        y_original = librosa.to_mono(audio_data) if audio_data.ndim > 1 else audio_data
+
         spectrum_original = get_spectrum_data(y_original, sr_original)
 
         audio_pydub = AudioSegment.from_file(temp_filename)
@@ -98,7 +101,8 @@ def upload_audio():
         processed_buffer_for_librosa = io.BytesIO()
         processed_audio_pydub.export(processed_buffer_for_librosa, format="wav")
         processed_buffer_for_librosa.seek(0)
-        y_processed, sr_processed = librosa.load(processed_buffer_for_librosa, sr=None, mono=True)
+        audio_data_processed, sr_processed = sf.read(processed_buffer_for_librosa)
+        y_processed = librosa.to_mono(audio_data_processed) if audio_data_processed.ndim > 1 else audio_data_processed
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
         export_final_buffer = io.BytesIO()
