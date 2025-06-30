@@ -24,3 +24,5 @@ python-dotenv==1.0.1 # Versión reciente y estándar
 
 # audioop-lts - NECESITA Python >=3.13, la re-incluimos
 audioop-lts==0.2.1
+llvmlite==0.42.0
+numba==0.61.2
