@@ -14,7 +14,7 @@ Werkzeug==3.1.3
 pydub==0.25.1
 librosa==0.10.2
 # CAMBIAR LAS VERSIONES DE NUMPY Y SCIPY POR UNAS MÁS CONSERVADORAS/ESTABLES
-numpy==1.25.2 # Una versión de Numpy anterior a la 1.26.x que a veces causa problemas
+numpy==1.26.4
 scipy==1.11.4 # Una versión de Scipy anterior a la 1.13.x que es conocida por ser estable
 soundfile==0.12.1
 
