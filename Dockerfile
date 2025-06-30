@@ -1,5 +1,8 @@
 FROM python:3.13
 
+# Instala herramientas esenciales de build, gfortran, ffmpeg,
+# y las dependencias de OpenBLAS/LAPACK y pkg-config
+# Nuevas adiciones para audioread/gstreamer
 RUN apt-get update -y && \
     apt-get install -y \
     build-essential \
