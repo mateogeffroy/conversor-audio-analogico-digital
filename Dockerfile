@@ -4,7 +4,10 @@ RUN apt-get update -y && \
     apt-get install -y \
     build-essential \
     gfortran \
-    ffmpeg && \
+    ffmpeg \
+    libatlas-base-dev \
+    pkg-config \
+    cmake && \
     rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
