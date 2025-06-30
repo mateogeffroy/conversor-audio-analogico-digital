@@ -1,5 +1,10 @@
-FROM python:3.13-slim-bookworm
+# Dockerfile
 
+# Cambia la imagen base a Python 3.12 (slim-bookworm)
+FROM python:3.12-slim-bookworm
+
+# Instala herramientas esenciales de build, gfortran, ffmpeg,
+# y las dependencias de OpenBLAS/LAPACK y pkg-config
 RUN apt-get update -y && \
     apt-get install -y \
     build-essential \
