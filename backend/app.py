@@ -77,10 +77,13 @@ def upload_audio():
     file.save(temp_filename)
 
     try:
-        audio_data, sr_original = sf.read(temp_filename)
-        y_original = librosa.to_mono(audio_data) if audio_data.ndim > 1 else audio_data
-
+        audio_pydub_original = AudioSegment.from_file(temp_filename)
+        original_buffer_for_librosa = io.BytesIO()
+        audio_pydub_original.export(original_buffer_for_librosa, format="wav")
+        original_buffer_for_librosa.seek(0)
+        y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True)
         spectrum_original = get_spectrum_data(y_original, sr_original)
+        audio_pydub = audio_pydub_original
 
         audio_pydub = AudioSegment.from_file(temp_filename)
 
