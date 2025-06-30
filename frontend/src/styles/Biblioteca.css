@@ -1,0 +1,179 @@
+/* frontend/src/styles/Biblioteca.css */
+
+.biblioteca-wrapper {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+    font-family: Arial, sans-serif;
+}
+
+.biblioteca-container, .selected-audio-details {
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 25px;
+    margin-top: 20px;
+}
+
+.biblioteca-titulo {
+    text-align: center;
+    color: #333;
+    margin-bottom: 25px;
+    font-size: 1.8em;
+}
+
+.loading-message, .error-message, .empty-message {
+    text-align: center;
+    padding: 20px;
+    color: #555;
+}
+
+.error-message {
+    color: #d9534f;
+    font-weight: bold;
+}
+
+.back-button {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: background-color 0.2s;
+    margin-bottom: 20px;
+}
+
+.back-button:hover {
+    background-color: #5a6268;
+}
+
+.audio-list {
+    list-style: none;
+    padding: 0;
+}
+
+.audio-item {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px 20px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.2s;
+}
+
+.audio-item:hover {
+    background-color: #e9ecef;
+    transform: translateY(-2px);
+}
+
+.audio-item h3 {
+    margin: 0;
+    color: #4A90E2;
+    font-size: 1.2em;
+}
+
+.audio-item p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9em;
+}
+
+.view-details-button {
+    align-self: flex-end;
+    background-color: #4A90E2;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.85em;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+.view-details-button:hover {
+    background-color: #367ac2;
+}
+
+/* Selected Audio Details */
+.selected-audio-details h2 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+}
+
+.back-to-list-button {
+    background-color: #6c757d;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.95em;
+    transition: background-color 0.2s;
+    margin-bottom: 20px;
+}
+
+.back-to-list-button:hover {
+    background-color: #5a6268;
+}
+
+.audio-player-section, .options-info-section, .spectrum-charts-section {
+    margin-bottom: 25px;
+    padding: 15px;
+    border: 1px solid #eee;
+    border-radius: 7px;
+    background-color: #fff;
+}
+
+.audio-player-section h4, .options-info-section h4, .spectrum-charts-section h4 {
+    color: #4A90E2;
+    margin-top: 0;
+    margin-bottom: 15px;
+    font-size: 1.1em;
+    text-align: center;
+}
+
+.processed-audio-player {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.options-info-section p {
+    margin: 5px 0;
+    font-size: 0.95em;
+    color: #444;
+}
+
+.spectrum-charts-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-around;
+}
+
+.chart-container {
+    flex: 1;
+    min-width: 300px; /* Asegura que los gráficos no sean demasiado pequeños */
+    max-width: 48%; /* Para dos columnas */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-radius: 5px;
+    padding: 10px;
+    background-color: #fff;
+}
+
+@media (max-width: 768px) {
+    .spectrum-charts-section {
+        flex-direction: column;
+        align-items: center;
+    }
+    .chart-container {
+        max-width: 95%; /* Una columna en pantallas pequeñas */
+    }
+}

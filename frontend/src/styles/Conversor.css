@@ -1,13 +1,12 @@
-.conversor {
-  width: 50% 
-}
+/*Estilos de 1)*/
+
 .conversor-titulo {
   color: #333;
   text-align: center;
   font-size: 1.8em;
-  margin-top: 10px;
-  margin-bottom: 20px;
+  margin: 10px 0 20px 0;
 }
+
 .conversor-container {
   margin-bottom: 30px;
   width: 100%;
@@ -16,11 +15,13 @@
   margin-right: auto;
   text-align: center;
 }
-.container-botones {
-  display:flex;
+
+.conversor-container-botones {
+  display: flex;
   flex-flow: column wrap;
 }
-.container-botones button {
+
+.conversor-boton {
   background-color: #4A90E2;
   color: white;
   padding: 10px 15px;
@@ -32,145 +33,32 @@
   width: 100%;
   max-width: 200px;
 }
-.container-botones button:hover {
+
+.conversor-boton:hover {
   background-color: #357ABD;
 }
-.container-archivo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 20px;
-  width: 100%;
-}
-.container-archivo input[type="file"] {
-  background-color: #4A90E2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1em;
-  width: 400px;
-}
-.label-boton {
-  margin-right: 10px;
-  font-weight: bold;
-}
-button:disabled {
+
+.conversor-boton:disabled {
   background-color: #cccccc;
   cursor: not-allowed;
 }
-button:disabled:hover {
+
+.conversor-boton:disabled:hover {
   background-color: #cccccc;
 }
-.conversor-container button {
-  background-color: #4A90E2;
-  color: white;
-  padding: 10px 15px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 1em;
-  margin: 5px auto;
-  width: 100%;
-  max-width: 200px;
-}
-.conversor-container h3 {
-  margin: 0;
-}
-.conversor-container button:hover {
-  background-color: #357ABD;
-}
-.audio-boton {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-}
-.audio-boton button {
-  background-color: #4A90E2;
-  margin-left: 10px;
+
+.conversor-label-boton {
+  margin-right: 10px;
+  font-weight: bold;
 }
 
-select {
-  padding: 9px 10px;
-  background-color: #fff;
-  color: #333;
-  border: 1px solid #ccc;
-}
-
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-}
-
-/* Estilos para el reproductor de audio */
-audio {
-  width: 100%;
-  margin-top: 10px;
-}
-
-/* Línea de separación */
-hr {
+.conversor-hr {
   border: none;
   border-top: 1px solid #eee;
   margin: 25px 0;
 }
 
-
-.options-row {
-  display: flex;
-  justify-content: space-around; /* Distribuye el espacio uniformemente */
-  align-items: flex-start; /* Alinea los items al tope */
-  flex-wrap: wrap; /* Permite que los elementos pasen a la siguiente línea en pantallas pequeñas */
-  gap: 20px; /* Añade un espacio entre los grupos de opciones */
-}
-
-/* Ajuste al .form-group para que funcione bien dentro de flexbox */
-.form-group {
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column; /* Apila el label sobre el input/select */
-  align-items: center; /* Centra el contenido del grupo */
-  flex: 1; /* Permite que cada grupo crezca y ocupe espacio similar */
-  min-width: 180px; /* Ancho mínimo para cada grupo de opción */
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px; /* Espacio entre el label y el control */
-}
-
-/* Estilos específicos para el grupo de radio buttons */
-.radio-group {
-  display: flex;
-  justify-content: center;
-  gap: 15px; /* Espacio entre WAV y MP3 */
-}
-
-.radio-group label {
-  font-weight: normal; /* Quitar negrita de los labels de radio button */
-  display: flex;
-  align-items: center;
-}
-
-/* Contenedor para el botón de procesar */
-.process-button-container {
-  text-align: center; /* Centra el botón */
-  margin-top: 25px; /* Espacio por encima del botón */
-}
-
-.process-button-container button {
-    padding: 12px 25px; /* Hacemos el botón un poco más grande */
-    font-size: 1.1em;
-    margin: 0;
-}
-
-.drop-zone {
+.conversor-drop-zone {
   margin-top: 15px;
   border: 2px dashed #ccc;
   border-radius: 8px;
@@ -181,19 +69,16 @@ hr {
   transition: border-color 0.3s, background-color 0.3s;
 }
 
-/* Estilo cuando el usuario está arrastrando un archivo sobre la caja */
-.drop-zone.dragging {
+.conversor-drop-zone.dragging {
   border-color: #4A90E2;
-  background-color: #f0f8ff; /* Un azul muy claro */
+  background-color: #f0f8ff;
 }
 
-/* El input de archivo real, que estará oculto */
-.file-input-hidden {
+.conversor-file-input {
   display: none;
 }
 
-/* El label que contiene el texto y el botón falso */
-.drop-zone-label {
+.conversor-drop-zone-label {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -203,12 +88,11 @@ hr {
   height: 100%;
 }
 
-.drop-zone-label p {
+.conversor-drop-text {
   margin: 5px 0;
 }
 
-/* El "botón" falso dentro del label */
-.drop-zone-button {
+.conversor-drop-zone-button {
   display: inline-block;
   margin-top: 10px;
   padding: 8px 16px;
@@ -218,47 +102,126 @@ hr {
   transition: background-color 0.2s;
 }
 
-.drop-zone:hover .drop-zone-button {
+.conversor-drop-zone:hover .conversor-drop-zone-button {
   background-color: #357ABD;
 }
 
-/* En tu archivo styles/Conversor.css */
+/*Estilos de 2)*/
 
-/* El contenedor principal para toda la sección de resultados */
-.resultados-container {
-  width: 100%;
-  text-align: center; /* Centra el h2 y el contenedor de botones */
+.conversor-texto {
+  margin: 0;
 }
 
-/* ESTA ES LA REGLA CLAVE: el contenedor de las columnas */
-.resultados-grid {
+.conversor-audio-player-wrapper {
   display: flex;
-  justify-content: space-around; /* Espacia las columnas uniformemente */
-  align-items: flex-start; /* Alinea las columnas por la parte de arriba */
-  flex-wrap: wrap; /* Permite que se apilen en pantallas pequeñas */
-  text-align: left; /* Resetea la alineación del texto para el contenido de las columnas */
-  margin-top: 20px;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 20px;
+  width: 100%;
 }
 
-/* Estilo para cada una de las columnas */
-.resultado-columna {
-  flex-basis: 48%; /* Cada columna ocupa casi la mitad del espacio */
-  min-width: 300px; /* Ancho mínimo para evitar que se aplasten demasiado */
+.conversor-audio-player-container {
+  width: 100%;
 }
 
-/* (El resto de tus estilos como .results-buttons-container, etc., se mantienen) */
+.conversor-audio {
+  width: 100%;
+  margin-top: 10px;
+}
 
-.loading-spinner {
-  border: 4px solid rgba(255, 255, 255, 0.3); /* Color del borde del spinner (más claro) */
-  border-top: 4px solid white; /* Color del borde superior (visible) */
-  border-radius: 50%; /* Lo hace redondo */
-  width: 16px; /* Ancho del spinner */
-  height: 16px; /* Alto del spinner */
-  animation: spin 1s linear infinite; /* Animación de giro */
-  display: inline-block; /* Permite que el spinner y el texto estén en la misma línea */
-  vertical-align: middle; /* Alinea el spinner verticalmente con el texto */
-  margin-right: 8px; /* Espacio entre el spinner y el texto "Cargando..." */
+.conversor-subtitulo {
+  margin: 0;
+}
+
+.conversor-options-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.conversor-form-group {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 180px;
+}
+
+.conversor-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.conversor-select {
+  padding: 9px 10px;
+  background-color: #fff;
+  color: #333;
+  border: 1px solid #ccc;
+}
+
+.conversor-radio-group {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+}
+
+.conversor-radio-label {
+  font-weight: normal;
+  display: flex;
+  align-items: center;
+}
+
+.conversor-process-button-container {
+  text-align: center;
+  margin-top: 25px;
+}
+
+.conversor-process-button-container .conversor-boton {
+  padding: 12px 25px;
+  font-size: 1.1em;
+  margin: 0;
+}
+
+.conversor-process-button-container .conversor-boton:disabled {
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.conversor-process-button-container .conversor-boton:disabled:hover {
+  background-color: #7abfe7;
+}
+
+/*Estilos de 3)*/
+
+.conversor-processing-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 1.5em;
+  z-index: 1000;
+}
+
+.conversor-loading-spinner {
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+  vertical-align: middle;
+  margin-right: 10px;
 }
 
 @keyframes spin {
@@ -266,11 +229,44 @@ hr {
   100% { transform: rotate(360deg); }
 }
 
-.process-button-container button:disabled {
-  opacity: 0.8; /* Ligeramente transparente */
-  pointer-events: none; /* Desactiva eventos del ratón */
+.conversor-processing-text {
+  margin: 0;
 }
 
-.process-button-container button:disabled:hover {
-  background-color: #7abfe7; /* Mantener el mismo color al pasar el ratón cuando está deshabilitado */
+/*Estilos de 4)*/
+
+.conversor-resultados-container {
+  width: 100%;
+  text-align: center;
+}
+
+.conversor-resultados-grid {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  text-align: left;
+  margin: 20px 0;
+}
+
+.conversor-resultado-columna {
+  flex-basis: 48%;
+  min-width: 300px;
+}
+
+.conversor-boton-secundario {
+  background-color: #4A90E2;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 1em;
+  margin: 5px auto;
+  width: 100%;
+  max-width: 200px;
+}
+
+.conversor-boton-secundario:hover {
+  background-color: #357ABD;
 }
