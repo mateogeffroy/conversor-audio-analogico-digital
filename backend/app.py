@@ -227,6 +227,10 @@ def download_audio():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al descargar el audio. Detalles: {str(e)}"}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "ok"}), 200
+
 @app.route('/api/library', methods=['GET'])
 def get_converted_audios():
     try:
