@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
-from pydub import AudioSegment
 import io
 import librosa
 import numpy as np
@@ -11,6 +10,9 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
 import soundfile as sf
+# import pydub # <--- COMENTAR O ELIMINAR ESTA LÍNEA
+import subprocess # Para manejar ffmpeg directamente si es necesario, o pydub para MP3 en descarga
+
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
@@ -61,52 +63,70 @@ def upload_audio():
     target_bit_depth_int = int(target_bit_depth_str) if target_bit_depth_str else None
 
     nombre_archivo_original = file.filename
-    file_extension = os.path.splitext(nombre_archivo_original)[1]
-    if not file_extension and hasattr(file, 'mimetype'):
-        if 'webm' in file.mimetype:
-            file_extension = ".webm"
-        elif 'mp3' in file.mimetype:
-            file_extension = ".mp3"
-        elif 'wav' in file.mimetype:
-            file_extension = ".wav"
-    if not file_extension:
-        file_extension = ".tmp"
+    # No necesitamos file_extension para el formato si librosa/soundfile lo detecta de los bytes
+    # o si lo convertimos a WAV primero.
 
     try:
-        audio_stream = io.BytesIO(file.read())
-        audio_pydub_original = AudioSegment.from_file(audio_stream, format=file_extension.strip('.').lower() if file_extension else None)
-        
-        original_buffer_for_librosa = io.BytesIO()
-        audio_pydub_original.export(original_buffer_for_librosa, format="wav")
-        original_buffer_for_librosa.seek(0)
+        audio_bytes = file.read() # Lee todo el contenido del archivo a memoria
+        audio_stream = io.BytesIO(audio_bytes)
 
-        y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True)
+        # --- CARGA DEL AUDIO ORIGINAL PARA ESPECTRO Y PROCESAMIENTO ---
+        # Usar librosa.load directamente. librosa es bueno para inferir formatos si ffmpeg está presente.
+        # Asegúrate que el archivo se lea como mono.
+        y_original, sr_original = librosa.load(audio_stream, sr=None, mono=True)
         spectrum_original = get_spectrum_data(y_original, sr_original)
 
-        processed_audio_pydub = audio_pydub_original
+        y_processed = y_original
+        sr_processed = sr_original
 
-        if target_sample_rate_int:
-            if processed_audio_pydub.frame_rate != target_sample_rate_int:
-                processed_audio_pydub = processed_audio_pydub.set_frame_rate(target_sample_rate_int)
+        # --- APLICAR OPCIONES DE CONVERSIÓN ---
+        # Remuestreo con librosa.resample
+        if target_sample_rate_int and sr_processed != target_sample_rate_int:
+            y_processed = librosa.resample(y_processed, orig_sr=sr_processed, target_sr=target_sample_rate_int)
+            sr_processed = target_sample_rate_int
         
+        # Cuantización con numpy (soundfile maneja los bits al escribir)
+        # librosa devuelve float, necesitamos convertir a int para la cuantización si es <= 16 bits
         if target_bit_depth_int:
-            target_sample_width_bytes = target_bit_depth_int // 8
-            if target_sample_width_bytes in [1, 2, 4] and processed_audio_pydub.sample_width != target_sample_width_bytes:
-                processed_audio_pydub = processed_audio_pydub.set_sample_width(target_sample_width_bytes)
+            if target_bit_depth_int == 8:
+                # Convertir a int8 y escalar al rango apropiado
+                y_processed = np.int8(y_processed * (2**7 - 1))
+                # Luego al escribir con soundfile, podemos especificar dtype='int8'
+            elif target_bit_depth_int == 16:
+                # Convertir a int16 y escalar al rango apropiado
+                y_processed = np.int16(y_processed * (2**15 - 1))
+                # Luego al escribir con soundfile, podemos especificar dtype='int16'
             elif target_bit_depth_int == 24:
-                if processed_audio_pydub.sample_width != 3:
-                    processed_audio_pydub = processed_audio_pydub.set_sample_width(3)
+                # soundfile no tiene un dtype 'int24'. Se maneja con 'int32' y se espera que el codec lo recorte.
+                # O pydub es mejor para esto. Mantendremos el float y soundfile lo escalará a int32 para 24 bit
+                # Convertir a int32 y escalar al rango apropiado para 24 bits
+                y_processed = np.int32(y_processed * (2**23 - 1)) 
+            else:
+                # Si target_bit_depth_int no es 8, 16, 24, no aplicamos cuantización o manejamos error
+                pass # Se mantiene como float para soundfile
 
-        processed_buffer_for_librosa = io.BytesIO()
-        processed_audio_pydub.export(processed_buffer_for_librosa, format="wav")
-        processed_buffer_for_librosa.seek(0)
-
-        audio_data_processed, sr_processed = sf.read(processed_buffer_for_librosa)
-        y_processed = librosa.to_mono(audio_data_processed) if audio_data_processed.ndim > 1 else audio_data_processed
+        # --- GENERAR ESPECTRO DEL AUDIO PROCESADO ---
+        # Aquí y_processed y sr_processed ya están en el estado final después de remuestreo y cuantización conceptual
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
+        # --- SIEMPRE EXPORTAR AUDIO PROCESADO COMO WAV A SUPABASE STORAGE ---
         final_processed_wav_buffer = io.BytesIO()
-        processed_audio_pydub.export(final_processed_wav_buffer, format="wav")
+        
+        # Escribir el audio procesado a un buffer WAV usando soundfile
+        # soundfile escala los floats a ints para WAV. Para bit_depth, soundfile usa subtype
+        sf_subtype = None
+        if target_bit_depth_int == 8:
+            sf_subtype = 'PCM_S8' # signed 8-bit PCM
+        elif target_bit_depth_int == 16:
+            sf_subtype = 'PCM_16' # signed 16-bit PCM
+        elif target_bit_depth_int == 24:
+            sf_subtype = 'PCM_24' # signed 24-bit PCM
+        
+        # soundfile.write puede aceptar floats en rango [-1, 1] y los escala al rango del subtipo
+        # Si y_processed ya se cuantizó manualmente (ej. a int8), pasar el dtype correspondiente
+        # Si no se cuantizó manualmente, pasar dtype=None para que soundfile lo determine.
+        sf.write(final_processed_wav_buffer, y_processed, sr_processed, format='WAV', subtype=sf_subtype)
+        
         final_processed_wav_buffer.seek(0)
         audio_data_to_upload_wav = final_processed_wav_buffer.read()
 
@@ -174,19 +194,50 @@ def download_audio():
             return jsonify({"error": "No se pudo descargar el archivo de Supabase Storage."}), 500
         
         audio_data_bytes = io.BytesIO(response_download)
-        audio_segment = AudioSegment.from_file(audio_data_bytes, format="wav")
-
-        output_buffer = io.BytesIO()
-        filename_base = os.path.splitext(os.path.basename(path_in_bucket))[0]
         
-        if download_format == 'wav':
-            audio_segment.export(output_buffer, format="wav")
-            mimetype = "audio/wav"
-            filename = f"{filename_base}.wav"
-        elif download_format == 'mp3':
-            audio_segment.export(output_buffer, format="mp3")
+        # Aquí, para manejar la conversión a MP3, vamos a reintroducir una dependencia ligera
+        # o ejecutar ffmpeg como subprocess. Si queremos evitar pydub COMPLETAMENTE,
+        # la mejor forma para MP3 es ejecutar ffmpeg directamente.
+
+        # Alternativa 1: Ejecutar ffmpeg como subprocess (más robusto para diferentes formatos)
+        if download_format == 'mp3':
+            # Guardar el WAV descargado temporalmente para ffmpeg
+            temp_wav_path = f"/tmp/{uuid.uuid4().hex}.wav"
+            with open(temp_wav_path, "wb") as f:
+                f.write(audio_data_bytes.getvalue())
+            
+            output_mp3_path = f"/tmp/{uuid.uuid4().hex}.mp3"
+            
+            # Comando ffmpeg para convertir WAV a MP3
+            # '-i': input file, '-b:a': audio bitrate, '-y': overwrite output file
+            command = [
+                'ffmpeg',
+                '-i', temp_wav_path,
+                '-b:a', '192k', # Bitrate de audio, puedes ajustarlo
+                '-y', output_mp3_path
+            ]
+            
+            try:
+                subprocess.run(command, check=True, capture_output=True)
+            except subprocess.CalledProcessError as e:
+                app.logger.error(f"FFmpeg conversion error: {e.stderr.decode()}")
+                raise Exception("Error en la conversión de MP3 con FFmpeg.")
+
+            with open(output_mp3_path, "rb") as f:
+                output_buffer = io.BytesIO(f.read())
+            
+            os.remove(temp_wav_path)
+            os.remove(output_mp3_path)
+            
             mimetype = "audio/mpeg"
+            filename_base = os.path.splitext(os.path.basename(path_in_bucket))[0]
             filename = f"{filename_base}.mp3"
+
+        elif download_format == 'wav':
+            output_buffer = audio_data_bytes # El buffer ya es WAV
+            mimetype = "audio/wav"
+            filename_base = os.path.splitext(os.path.basename(path_in_bucket))[0]
+            filename = f"{filename_base}.wav"
         else:
             return jsonify({"error": "Formato de descarga no soportado"}), 400
         
@@ -210,6 +261,7 @@ def get_converted_audios():
         response = supabase.table("audios_convertidos") \
             .select("*") \
             .order("fecha_creacion", desc=True) \
+            .limit(5) \
             .execute()
 
         if response.data:
