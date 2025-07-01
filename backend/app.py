@@ -107,11 +107,12 @@ def upload_audio():
         
         # Aplicar Profundidad de Bits (Cuantización) con FFmpeg
         if target_bit_depth_int == 8:
-            command_process.extend(['-acodec', 'pcm_s8']) # 8-bit signed PCM
+            # CAMBIO: Usar 'pcm_u8' para WAV de 8 bits, que es lo más común y compatible
+            command_process.extend(['-acodec', 'pcm_u8']) # <-- ¡CAMBIO AQUÍ!
         elif target_bit_depth_int == 16:
-            command_process.extend(['-acodec', 'pcm_s16le']) # 16-bit signed PCM little-endian
+            command_process.extend(['-acodec', 'pcm_s16le'])
         elif target_bit_depth_int == 24:
-            command_process.extend(['-acodec', 'pcm_s24le']) # 24-bit signed PCM little-endian
+            command_process.extend(['-acodec', 'pcm_s24le'])
         else: # Default a float 32-bit si 'Original' o no especificado
             command_process.extend(['-acodec', 'pcm_f32le']) 
 
