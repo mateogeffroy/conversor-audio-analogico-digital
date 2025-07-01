@@ -12,24 +12,27 @@ function Biblioteca() {
 
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchAudios = async () => {
-            try {
-                const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
-                const response = await fetch(`${apiBaseUrl}/api/library`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                const data = await response.json();
-                setAudios(data);
-            } catch (err) {
-                setError("No se pudieron cargar los audios. " + err.message);
-                console.error("Error fetching library:", err);
-            } finally {
-                setLoading(false);
+    // Función para recargar los audios (útil después de eliminar)
+    const fetchAudios = async () => {
+        try {
+            setLoading(true); // Opcional: mostrar spinner al recargar
+            const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiBaseUrl}/api/library`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
-        };
+            const data = await response.json();
+            setAudios(data);
+            setError(null); // Limpiar errores previos si la recarga es exitosa
+        } catch (err) {
+            setError("No se pudieron cargar los audios. " + err.message);
+            console.error("Error fetching library:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         fetchAudios();
     }, []);
 
@@ -77,6 +80,32 @@ function Biblioteca() {
         }
     };
 
+    // NUEVA FUNCIÓN: Manejar la eliminación de un audio
+    const handleDeleteAudio = async (audioId, event) => {
+        event.stopPropagation(); // Evitar que el clic en el botón active handleSelectAudio
+        if (!window.confirm("¿Estás seguro de que quieres eliminar este audio? Esta acción es irreversible.")) {
+            return;
+        }
+
+        try {
+            const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiBaseUrl}/api/delete_audio/${audioId}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || 'Error desconocido'}`);
+            }
+
+            alert("Audio eliminado exitosamente.");
+            setSelectedAudio(null); // Volver a la lista si estábamos viendo los detalles del audio eliminado
+            fetchAudios(); // Recargar la lista de audios
+        } catch (err) {
+            console.error("Error al eliminar el audio:", err);
+            alert(`Ocurrió un error al eliminar el audio: ${err.message}`);
+        }
+    };
 
     if (loading) {
         return <div className="biblioteca-container loading-message">Cargando biblioteca...</div>;
@@ -94,19 +123,25 @@ function Biblioteca() {
 
             {!selectedAudio ? (
                 <div className="biblioteca-container">
-                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos</h2>
+                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos Recientes</h2>
                     {audios.length === 0 ? (
                         <p className="empty-message">No hay audios convertidos aún.</p>
                     ) : (
                         <ul className="audio-list">
                             {audios.map((audio) => (
-                                <li key={audio.id} className="audio-item" onClick={() => handleSelectAudio(audio)}>
-                                    <h3>{audio.nombre_archivo_original || `Audio ${audio.id.substring(0, 8)}`}</h3>
-                                    {/* Eliminada la referencia a "Almacenado como: WAV" */}
-                                    <p>Fecha: {new Date(audio.fecha_creacion).toLocaleString()}</p>
-                                    <button onClick={(e) => { e.stopPropagation(); handleSelectAudio(audio); }} className="view-details-button">
-                                        Ver Detalles
-                                    </button>
+                                <li key={audio.id} className="audio-item"> {/* Eliminar onClick del li si el botón de eliminar está dentro */}
+                                    <div onClick={() => handleSelectAudio(audio)}> {/* Mover onClick al div interno */}
+                                        <h3>{audio.nombre_archivo_original || `Audio ${audio.id.substring(0, 8)}`}</h3>
+                                        <p>Fecha: {new Date(audio.fecha_creacion).toLocaleString()}</p>
+                                    </div>
+                                    <div className="audio-item-actions">
+                                        <button onClick={(e) => { e.stopPropagation(); handleSelectAudio(audio); }} className="view-details-button">
+                                            Ver Detalles
+                                        </button>
+                                        <button onClick={(e) => handleDeleteAudio(audio.id, e)} className="delete-button">
+                                            Eliminar
+                                        </button>
+                                    </div>
                                 </li>
                             ))}
                         </ul>
@@ -120,7 +155,6 @@ function Biblioteca() {
                     <h2>Detalles del Audio: {selectedAudio.nombre_archivo_original || `Audio ${selectedAudio.id.substring(0, 8)}`}</h2>
 
                     <div className="audio-player-section">
-                        {/* Título más genérico para el audio almacenado */}
                         <h4>Audio Procesado</h4>
                         <audio controls src={selectedAudio.url_audio_procesado} className="processed-audio-player" />
                         <div className="download-buttons-container">
@@ -147,7 +181,6 @@ function Biblioteca() {
 
                     <div className="options-info-section">
                         <h4>Opciones de Conversión</h4>
-                        {/* Eliminada la referencia a "Formato de Exportación" */}
                         <p><strong>Tasa de Muestreo:</strong> {selectedAudio.frecuencia_muestreo ? `${selectedAudio.frecuencia_muestreo / 1000} kHz` : 'Original'}</p>
                         <p><strong>Profundidad de Bits:</strong> {selectedAudio.profundidad_de_bits ? `${selectedAudio.profundidad_de_bits} bits` : 'Original'}</p>
                         <p><strong>Fecha de Conversión:</strong> {selectedAudio.fecha_creacion ? new Date(selectedAudio.fecha_creacion).toLocaleString() : 'N/A'}</p>
@@ -170,6 +203,11 @@ function Biblioteca() {
                                 />
                             )}
                         </div>
+                    </div>
+                     <div className="selected-audio-details-actions"> {/* Contenedor para el botón de eliminar en detalles */}
+                        <button onClick={(e) => handleDeleteAudio(selectedAudio.id, e)} className="delete-button delete-button-large">
+                            Eliminar Audio
+                        </button>
                     </div>
                 </div>
             )}

@@ -177,3 +177,45 @@
         max-width: 95%; /* Una columna en pantallas pequeñas */
     }
 }
+
+/* Biblioteca.css */
+
+/* Estilo para los botones de acción en la lista */
+.audio-item-actions {
+    display: flex;
+    gap: 10px; /* Espacio entre botones */
+    margin-top: 10px;
+    justify-content: flex-end; /* Alinea los botones a la derecha */
+}
+
+/* Estilo para el botón de eliminar (general) */
+.delete-button {
+    background-color: #e74c3c; /* Rojo para eliminar */
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background-color 0.2s ease;
+}
+
+.delete-button:hover {
+    background-color: #c0392b;
+}
+
+.delete-button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* Estilo para el botón de eliminar en la vista de detalles */
+.selected-audio-details-actions {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.delete-button-large {
+    padding: 12px 20px;
+    font-size: 1.1em;
+}

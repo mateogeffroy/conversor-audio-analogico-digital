@@ -49,6 +49,63 @@ def get_spectrum_data(y, sr, max_points=512):
 def health_check():
     return jsonify({"status": "ok"}), 200
 
+@app.route('/api/delete_audio/<string:audio_id>', methods=['DELETE'])
+def delete_audio(audio_id):
+    try:
+        # 1. Obtener la URL del audio procesado del registro de la base de datos
+        # para saber qué archivo eliminar del Storage.
+        response_select = supabase.table("audios_convertidos").select("url_audio_procesado").eq("id", audio_id).single().execute()
+        
+        if not response_select.data:
+            return jsonify({"error": "Audio no encontrado en la base de datos."}), 404
+        
+        audio_url_to_delete = response_select.data.get("url_audio_procesado")
+        
+        if not audio_url_to_delete:
+            return jsonify({"error": "URL de audio no encontrada para el registro."}), 500
+
+        # Extraer el nombre del archivo del bucket de la URL
+        # URL ejemplo: https://<project_id>.supabase.co/storage/v1/object/public/audios-convertidos/public/<uuid>.wav
+        path_segments = audio_url_to_delete.split('/')
+        if 'audios-convertidos' not in path_segments:
+             return jsonify({"error": "URL de Storage inválida."}), 400
+        
+        # El path_in_bucket es todo lo que viene después de 'audios-convertidos/public/'
+        # Asegurarse de que el path sea correcto para Supabase Storage (sin el 'public/' extra si no es parte del path real en el bucket)
+        # Vamos a reconstruirlo de forma más segura o extraerlo del final
+        
+        # Una forma más segura de obtener el path real dentro del bucket 'audios-convertidos'
+        # Supabase suele almacenar en "public/<filename>", así que el path para delete es "public/<filename>"
+        try:
+            # Encuentra el índice de 'audios-convertidos' y 'public' si existen
+            bucket_index = path_segments.index('audios-convertidos')
+            object_public_index = path_segments.index('public', bucket_index + 1)
+            # El path real dentro del bucket es lo que sigue después de 'audios-convertidos/public/'
+            file_path_in_bucket = '/'.join(path_segments[object_public_index:])
+        except ValueError:
+            return jsonify({"error": "Formato de URL de Storage no reconocido."}), 400
+
+        # 2. Eliminar el archivo de Supabase Storage
+        response_delete_storage = supabase.storage.from_("audios-convertidos").remove([file_path_in_bucket])
+        
+        # La respuesta de .remove() a veces puede ser una lista vacía o un objeto,
+        # verificar si hubo un error. Si no hay excepción, asumimos éxito.
+        app.logger.info(f"Archivo eliminado de Storage: {file_path_in_bucket}")
+
+        # 3. Eliminar el registro de la base de datos
+        response_delete_db = supabase.table("audios_convertidos").delete().eq("id", audio_id).execute()
+
+        if response_delete_db.data:
+            return jsonify({"message": "Audio eliminado exitosamente."}), 200
+        else:
+            # Si el registro no se encontró o no se pudo eliminar, a pesar de que el archivo del storage sí
+            return jsonify({"error": "Audio eliminado del Storage, pero no se pudo eliminar el registro de la DB o no fue encontrado."}), 404
+
+    except Exception as e:
+        app.logger.error(f"Error al eliminar audio: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Error interno al eliminar el audio. Detalles: {str(e)}"}), 500
+
 @app.route('/api/upload_audio', methods=['POST'])
 def upload_audio():
     if 'audio_file' not in request.files:
