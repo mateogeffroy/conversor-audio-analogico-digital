@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 import io
-import librosa
+# Eliminados librosa y pydub
 import numpy as np
 import base64
 import traceback
@@ -11,7 +11,6 @@ from supabase import create_client, Client
 import uuid
 import soundfile as sf
 import subprocess
-
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
@@ -26,12 +25,17 @@ SUPABASE_URL: str = os.environ.get('SUPABASE_URL')
 SUPABASE_SERVICE_KEY: str = os.environ.get('SUPABASE_SERVICE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
+# Función auxiliar para generar datos del espectro
+# Usa numpy.fft, que es muy eficiente.
 def get_spectrum_data(y, sr, max_points=512):
     if len(y) == 0:
         return {"frequencies": [], "magnitudes": []}
     
-    fft_result = np.fft.rfft(y)
-    frequencies = np.fft.rfftfreq(len(y), d=1./sr)
+    # Asegurarse de que y sea un array de numpy si no lo es ya
+    y_np = np.array(y)
+    
+    fft_result = np.fft.rfft(y_np)
+    frequencies = np.fft.rfftfreq(len(y_np), d=1./sr)
     magnitudes = np.abs(fft_result)
 
     if len(frequencies) > max_points:
@@ -63,61 +67,73 @@ def upload_audio():
 
     nombre_archivo_original = file.filename
     
+    # Rutas para archivos temporales
     temp_input_path = f"/tmp/{uuid.uuid4().hex}_input.{file.filename.split('.')[-1] if '.' in file.filename else 'tmp'}"
     file.save(temp_input_path)
     
-    temp_wav_path = f"/tmp/{uuid.uuid4().hex}_converted.wav"
+    temp_original_wav_path = f"/tmp/{uuid.uuid4().hex}_original.wav"
+    temp_processed_wav_path = f"/tmp/{uuid.uuid4().hex}_processed.wav"
 
     try:
-        command = [
+        # 1. Convertir el archivo de entrada (MP3, WebM, etc.) a un WAV original estándar con FFmpeg
+        # Esto asegura una entrada limpia para el resto del procesamiento.
+        command_to_original_wav = [
             'ffmpeg',
             '-i', temp_input_path,
-            '-acodec', 'pcm_s16le',
-            '-ar', '44100',
-            '-ac', '1',
+            '-acodec', 'pcm_f32le', # PCM Float 32-bit para alta calidad
+            '-ar', '44100',        # Sample rate inicial, ajustado para ser fijo aquí
+            '-ac', '1',            # Forzar a mono
             '-y',
-            temp_wav_path
+            temp_original_wav_path
         ]
+        subprocess.run(command_to_original_wav, check=True, capture_output=True)
+
+        # Cargar el WAV original con soundfile para obtener sus datos para el espectro original
+        y_original_audio_data, sr_original_audio_data = sf.read(temp_original_wav_path)
+        spectrum_original = get_spectrum_data(y_original_audio_data, sr_original_audio_data)
+
+        # 2. Preparar el comando FFmpeg para el procesamiento (remuestreo y cuantización)
+        command_process = [
+            'ffmpeg',
+            '-i', temp_original_wav_path, # Usar el WAV original como entrada
+        ]
+
+        # Aplicar Tasa de Muestreo con FFmpeg
+        if target_sample_rate_int:
+            command_process.extend(['-ar', str(target_sample_rate_int)])
+            sr_processed_final = target_sample_rate_int
+        else:
+            sr_processed_final = sr_original_audio_data # Si no se especifica, se mantiene el del original WAV
         
-        subprocess.run(command, check=True, capture_output=True)
-
-        y_original, sr_original = sf.read(temp_wav_path)
-        y_original = librosa.to_mono(y_original)
-
-        spectrum_original = get_spectrum_data(y_original, sr_original)
-
-        y_processed = y_original
-        sr_processed = sr_original
-
-        if target_sample_rate_int and sr_processed != target_sample_rate_int:
-            y_processed = librosa.resample(y_processed, orig_sr=sr_processed, target_sr=target_sample_rate_int)
-            sr_processed = target_sample_rate_int
-        
-        # Eliminadas las conversiones manuales a int8, int16, int32.
-        # soundfile.write espera floats en [-1.0, 1.0] y los escala al subtipo.
-        y_processed = np.array(y_processed, dtype=np.float32)
-
-        spectrum_processed = get_spectrum_data(y_processed, sr_processed)
-
-        final_processed_wav_buffer = io.BytesIO()
-        
-        sf_subtype = None
-        # Definir el subtipo para soundfile.write
+        # Aplicar Profundidad de Bits (Cuantización) con FFmpeg
         if target_bit_depth_int == 8:
-            sf_subtype = 'PCM_S8' # signed 8-bit PCM
+            command_process.extend(['-acodec', 'pcm_s8']) # 8-bit signed PCM
         elif target_bit_depth_int == 16:
-            sf_subtype = 'PCM_16' # signed 16-bit PCM
+            command_process.extend(['-acodec', 'pcm_s16le']) # 16-bit signed PCM little-endian
         elif target_bit_depth_int == 24:
-            sf_subtype = 'PCM_24' # signed 24-bit PCM
-        else: # Si es 'Original' o un valor no reconocido, por defecto a float32
-            sf_subtype = 'PCM_F32' # Usar float 32-bit para alta calidad y compatibilidad
+            command_process.extend(['-acodec', 'pcm_s24le']) # 24-bit signed PCM little-endian
+        else: # Default a float 32-bit si 'Original' o no especificado
+            command_process.extend(['-acodec', 'pcm_f32le']) 
 
-        # Escribir el audio procesado a un buffer WAV usando soundfile
-        # soundfile.write tomará los floats [-1.0, 1.0] y los convertirá al subtipo especificado
-        sf.write(final_processed_wav_buffer, y_processed, sr_processed, format='WAV', subtype=sf_subtype)
+        command_process.extend([
+            '-ac', '1', # Forzar mono
+            '-y',
+            temp_processed_wav_path # Archivo WAV de salida procesado
+        ])
         
-        final_processed_wav_buffer.seek(0)
-        audio_data_to_upload_wav = final_processed_wav_buffer.read()
+        subprocess.run(command_process, check=True, capture_output=True)
+
+        # Cargar el WAV procesado con soundfile para generar el espectro procesado
+        y_processed_audio_data, sr_processed_audio_data = sf.read(temp_processed_wav_path)
+        # Asegurarse de que sr_processed_final refleja lo que ffmpeg realmente usó al final
+        if sr_processed_audio_data != sr_processed_final:
+             sr_processed_final = sr_processed_audio_data
+
+        spectrum_processed = get_spectrum_data(y_processed_audio_data, sr_processed_audio_data)
+
+        # --- Subir el WAV procesado a Supabase Storage ---
+        with open(temp_processed_wav_path, "rb") as f:
+            audio_data_to_upload_wav = f.read()
 
         supabase_file_name = f"{uuid.uuid4().hex}.wav"
         path_in_bucket = f"public/{supabase_file_name}"
@@ -135,7 +151,7 @@ def upload_audio():
 
         data_to_insert = {
             "nombre_archivo_original": nombre_archivo_original,
-            "frecuencia_muestreo": target_sample_rate_int,
+            "frecuencia_muestreo": sr_processed_final,
             "profundidad_de_bits": target_bit_depth_int,
             "url_audio_procesado": public_audio_url_wav,
             "espectro_original": spectrum_original,
@@ -145,7 +161,9 @@ def upload_audio():
         response_insert = supabase.table("audios_convertidos").insert(data_to_insert).execute()
 
         if response_insert.data:
-            audio_base64_wav = base64.b64encode(audio_data_to_upload_wav).decode('utf-8')
+            # Para la previsualización en el frontend, se lee el WAV procesado a base64
+            with open(temp_processed_wav_path, "rb") as f_preview:
+                audio_base64_wav = base64.b64encode(f_preview.read()).decode('utf-8')
 
             return jsonify({
                 "message": "Audio procesado y almacenado exitosamente.",
@@ -159,17 +177,17 @@ def upload_audio():
             raise Exception(f"Fallo al guardar metadatos en Supabase Database: {response_insert.json()}")
     
     except subprocess.CalledProcessError as e:
-        app.logger.error(f"FFmpeg conversion error during upload: {e.stderr.decode()}")
-        return jsonify({"error": f"Error en la conversión de entrada con FFmpeg. Detalles: {e.stderr.decode()}"}), 500
+        app.logger.error(f"FFmpeg conversion error: {e.stderr.decode()}")
+        return jsonify({"error": f"Error en el procesamiento de audio con FFmpeg. Detalles: {e.stderr.decode()}"}), 500
     except Exception as e:
-        app.logger.error(f"Error al procesar el audio: {str(e)}")
+        app.logger.error(f"Error general al procesar el audio: {str(e)}")
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al procesar el audio. Detalles: {str(e)}"}), 500
     finally:
-        if os.path.exists(temp_input_path):
-            os.remove(temp_input_path)
-        if os.path.exists(temp_wav_path):
-            os.remove(temp_wav_path)
+        # Asegurarse de limpiar todos los archivos temporales
+        for temp_file in [temp_input_path, temp_original_wav_path, temp_processed_wav_path]:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
 @app.route('/api/download_audio', methods=['GET'])
 def download_audio():
@@ -182,8 +200,8 @@ def download_audio():
     if not audio_url.startswith(f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/"):
         return jsonify({"error": "URL de audio inválida o no permitida"}), 400
 
-    temp_wav_path_download = None
-    output_temp_path_download = None
+    temp_downloaded_wav_path = None
+    output_converted_path = None
 
     try:
         path_in_bucket = audio_url.split(f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/")[1]
@@ -193,35 +211,37 @@ def download_audio():
         if not response_download:
             return jsonify({"error": "No se pudo descargar el archivo de Supabase Storage."}), 500
         
-        audio_data_bytes_from_supabase = io.BytesIO(response_download)
+        # Guardar el WAV descargado temporalmente
+        temp_downloaded_wav_path = f"/tmp/{uuid.uuid4().hex}_downloaded.wav"
+        with open(temp_downloaded_wav_path, "wb") as f:
+            f.write(response_download)
         
         output_buffer = io.BytesIO()
         filename_base = os.path.splitext(os.path.basename(path_in_bucket))[0]
         
         if download_format == 'mp3':
-            temp_wav_path_download = f"/tmp/{uuid.uuid4().hex}_download_input.wav"
-            with open(temp_wav_path_download, "wb") as f:
-                f.write(audio_data_bytes_from_supabase.getvalue())
-            
-            output_temp_path_download = f"/tmp/{uuid.uuid4().hex}_download_output.mp3"
+            output_converted_path = f"/tmp/{uuid.uuid4().hex}_output.mp3"
             
             command = [
                 'ffmpeg',
-                '-i', temp_wav_path_download,
+                '-i', temp_downloaded_wav_path, # Entrada: el WAV descargado
                 '-b:a', '192k',
-                '-y', output_temp_path_download
+                '-y', output_converted_path
             ]
             
             subprocess.run(command, check=True, capture_output=True)
 
-            with open(output_temp_path_download, "rb") as f:
+            with open(output_converted_path, "rb") as f:
                 output_buffer = io.BytesIO(f.read())
             
             mimetype = "audio/mpeg"
             filename = f"{filename_base}.mp3"
 
         elif download_format == 'wav':
-            output_buffer = audio_data_bytes_from_supabase
+            # Si se pide WAV, simplemente leemos el WAV descargado y lo enviamos
+            with open(temp_downloaded_wav_path, "rb") as f:
+                output_buffer = io.BytesIO(f.read())
+            
             mimetype = "audio/wav"
             filename = f"{filename_base}.wav"
         else:
@@ -244,10 +264,10 @@ def download_audio():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al descargar el audio. Detalles: {str(e)}"}), 500
     finally:
-        if temp_wav_path_download and os.path.exists(temp_wav_path_download):
-            os.remove(temp_wav_path_download)
-        if output_temp_path_download and os.path.exists(output_temp_path_download):
-            os.remove(output_temp_path_download)
+        # Limpiar archivos temporales en la descarga
+        for temp_file in [temp_downloaded_wav_path, output_converted_path]:
+            if temp_file and os.path.exists(temp_file):
+                os.remove(temp_file)
 
 @app.route('/api/library', methods=['GET'])
 def get_converted_audios():
