@@ -1,9 +1,10 @@
 # Dockerfile
 
-# OPCIÓN A (RECOMENDADA): Usar una versión específica y estable
 FROM mambaorg/micromamba:latest
 
 # Instala SOLO las dependencias de APT que no vienen con Conda (principalmente FFmpeg y GStreamer)
+# **CAMBIO AQUÍ: Añadir USER root y USER mambauser**
+USER root # Cambia a usuario root para ejecutar apt-get
 RUN apt-get update -y && \
     apt-get install -y \
     ffmpeg \
@@ -17,9 +18,9 @@ RUN apt-get update -y && \
     gstreamer1.0-tools \
     gstreamer1.0-x && \
     rm -rf /var/lib/apt/lists/*
+USER mambauser # Vuelve al usuario no root por defecto de micromamba
 
 # Crea un entorno Conda/Mamba y activa el entorno base para instalar Python libs
-# Asegúrate de que Python 3.13 sea compatible con la versión de micromamba que elijas.
 RUN micromamba activate base && \
     micromamba install -y python=3.13 && \
     micromamba clean --all --yes
