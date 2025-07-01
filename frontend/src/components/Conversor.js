@@ -8,7 +8,8 @@ function Conversor() {
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
-  const [exportFormat, setExportFormat] = useState('wav');
+  // ELIMINAR O COMENTAR esta línea, ya no necesitamos exportFormat aquí
+  // const [exportFormat, setExportFormat] = useState('wav'); 
   const [targetSampleRate, setTargetSampleRate] = useState('');
   const [targetBitDepth, setTargetBitDepth] = useState('');
   const mediaRecorderRef = useRef(null);
@@ -17,7 +18,8 @@ function Conversor() {
   const [originalSpectrumData, setOriginalSpectrumData] = useState(null);
   const [processedSpectrumData, setProcessedSpectrumData] = useState(null);
   const [processedAudioPreviewSrc, setProcessedAudioPreviewSrc] = useState(null);
-  const [processedAudioInfo, setProcessedAudioInfo] = useState(null);
+  // processedAudioInfo ahora solo necesita la URL del WAV procesado en Supabase
+  const [processedAudioInfo, setProcessedAudioInfo] = useState(null); 
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
@@ -169,10 +171,10 @@ function Conversor() {
         return;
     }
 
-
     const formData = new FormData();
     formData.append('audio_file', audioData, inputFileName); // Asegúrate de que el tercer argumento (filename) tenga extensión
-    formData.append('export_format', exportFormat);
+    // ELIMINAR O COMENTAR esta línea, ya no necesitamos enviar export_format aquí
+    // formData.append('export_format', exportFormat); 
     if (targetSampleRate) {
       formData.append('sample_rate', targetSampleRate);
     }
@@ -190,68 +192,70 @@ function Conversor() {
       if (response.ok) {
         setOriginalSpectrumData(result.original_spectrum);
         setProcessedSpectrumData(result.processed_spectrum);
-        // Usar processed_audio_url_supabase para la previsualización si existe,
-        // de lo contrario, usar base64 (útil si el backend no sube a Supabase aún)
-        const audioSrc = result.processed_audio_url_supabase || `data:${result.processed_audio_mimetype};base64,${result.processed_audio_base64}`;
+        // processed_audio_url_supabase_wav es la nueva clave para la URL del WAV en Supabase
+        const audioSrc = result.processed_audio_url_supabase_wav; 
         setProcessedAudioPreviewSrc(audioSrc);
-        setProcessedAudioInfo({ base64: result.processed_audio_base64, mimetype: result.processed_audio_mimetype, filename: result.download_filename });
-        // isProcessing se setea a false en el finally
+        // processedAudioInfo ahora solo necesita la URL del WAV en Supabase
+        setProcessedAudioInfo({ 
+            supabaseWavUrl: result.processed_audio_url_supabase_wav 
+        });
       } else {
-        // Mostrar el error del servidor al usuario
         alert(`Error del servidor: ${result.error || 'Ocurrió un error desconocido.'}`);
         throw new Error(result.error || 'Error del servidor.');
       }
     } catch (err) {
       console.error("Error en handleSubmitAudio:", err);
-      // Solo alerta un error general si no se alertó uno específico del servidor
       if (!err.message.startsWith("Error del servidor:")) {
           alert("Ocurrió un error al procesar el audio. Por favor, inténtalo de nuevo.");
       }
-      setProcessedAudioPreviewSrc(null); // Limpiar preview si hay error
+      setProcessedAudioPreviewSrc(null);
       setOriginalSpectrumData(null);
       setProcessedSpectrumData(null);
       setProcessedAudioInfo(null);
     } finally {
-      setIsLoading(false); // Siempre desactiva el estado de carga
-      setIsProcessing(false); // Siempre desactiva el estado de procesamiento
+      setIsLoading(false);
+      setIsProcessing(false);
     }
   };
 
-  const handleDownloadProcessedAudio = () => {
-    if (!processedAudioInfo) return;
-    // Si el audio está en Supabase Storage, no necesitas el base64 para descargar.
-    // Simplemente abre la URL en una nueva pestaña o usa un link para descargar.
-    // Sin embargo, si quieres mantener el flujo de descarga de base64, está bien.
-    // Si usas la URL de Supabase para descargar, asegúrate de que sea pública y
-    // que el navegador la maneje como descarga (a veces abre en nueva pestaña).
+  // NUEVA FUNCIÓN: Para manejar la descarga de audio en un formato específico
+  const handleDownloadProcessedAudio = async (format) => {
+    if (!processedAudioInfo || !processedAudioInfo.supabaseWavUrl) return;
 
-    // Opción 1: Descargar desde Base64 (como lo tienes)
-    const byteCharacters = atob(processedAudioInfo.base64);
-    const byteNumbers = new Array(byteCharacters.length);
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+    const downloadUrl = `${apiBaseUrl}/api/download_audio?audio_url=${encodeURIComponent(processedAudioInfo.supabaseWavUrl)}&format=${format}`;
+
+    try {
+        const response = await fetch(downloadUrl);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Obtener el nombre de archivo del encabezado Content-Disposition
+        const contentDisposition = response.headers.get('Content-Disposition');
+        let filename = `processed_audio.${format}`; // Fallback filename
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="(.+)"/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            }
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+    } catch (error) {
+        console.error(`Error al descargar el audio en formato ${format}:`, error);
+        alert(`Ocurrió un error al descargar el audio en formato ${format}.`);
     }
-    const byteArray = new Uint8Array(byteNumbers);
-    const blob = new Blob([byteArray], { type: processedAudioInfo.mimetype });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = processedAudioInfo.filename;
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-    document.body.removeChild(a);
-
-    // Opción 2: Si el backend ya devolviera la URL de descarga directa desde Supabase Storage
-    // if (processedAudioInfo.download_url_from_supabase) {
-    //     const a = document.createElement('a');
-    //     a.href = processedAudioInfo.download_url_from_supabase;
-    //     a.download = processedAudioInfo.filename; // Esto podría no forzar la descarga en todos los casos
-    //     document.body.appendChild(a);
-    //     a.click();
-    //     document.body.removeChild(a);
-    // }
   };
 
   const originalAudioSrc = audioBlob ? URL.createObjectURL(audioBlob) : (uploadedFile ? URL.createObjectURL(uploadedFile) : null);
@@ -351,6 +355,8 @@ function Conversor() {
                       {bitDepths.map(depth => (<option key={depth.value} value={depth.value}>{depth.label}</option>))}
                     </select>
                   </div>
+                  {/* ELIMINAR O COMENTAR este div del formato de exportación */}
+                  {/*
                   <div className="conversor-form-group">
                     <label className="conversor-label">Formato de Exportación:</label>
                     <div className='conversor-radio-group'>
@@ -362,6 +368,7 @@ function Conversor() {
                       </label>
                     </div>
                   </div>
+                  */}
                 </div>
                 <div className="conversor-process-button-container">
                   <button className='conversor-boton' onClick={() => { handleSubmitAudio(); setIsProcessing(true); }} disabled={isLoading}>Procesar Audio</button>
@@ -400,9 +407,14 @@ function Conversor() {
           </div>
 
           <div className='conversor-container-botones'>
-            <button className='conversor-boton' onClick={handleDownloadProcessedAudio}>
-              Descargar Audio Procesado ({processedAudioInfo ? processedAudioInfo.filename.split('.').pop().toUpperCase() : ''})
+            {/* NUEVOS BOTONES DE DESCARGA */}
+            <button className='conversor-boton' onClick={() => handleDownloadProcessedAudio('wav')}>
+              Descargar WAV
             </button>
+            <button className='conversor-boton' onClick={() => handleDownloadProcessedAudio('mp3')}>
+              Descargar MP3
+            </button>
+            {/* FIN NUEVOS BOTONES DE DESCARGA */}
             <button className="conversor-boton-secundario" onClick={handleClearAudio}>
               Procesar Otro Audio
             </button>

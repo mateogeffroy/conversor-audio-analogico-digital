@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file # Añadir send_file
 from flask_cors import CORS
 import os
 from pydub import AudioSegment
@@ -10,7 +10,7 @@ import traceback
 from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
-import soundfile as sf # Necesario para la carga del espectro procesado
+import soundfile as sf
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
@@ -52,7 +52,8 @@ def upload_audio():
     if file.filename == '':
         return jsonify({"error": "No se seleccionó ningún archivo"}), 400
 
-    export_format_req = request.form.get('formato_exportacion', 'wav').lower()
+    # ELIMINAR O COMENTAR esta línea, ya no necesitamos 'formato_exportacion' aquí
+    # export_format_req = request.form.get('formato_exportacion', 'wav').lower() 
     target_sample_rate_str = request.form.get('sample_rate')
     target_bit_depth_str = request.form.get('bit_depth')
 
@@ -77,23 +78,14 @@ def upload_audio():
 
     try:
         # --- CARGA DEL AUDIO ORIGINAL PARA ESPECTRO ---
-        # Usar pydub para cargar el archivo original desde disco (maneja varios formatos via FFmpeg)
         audio_pydub_original = AudioSegment.from_file(temp_filename)
-
-        # Exportar a un buffer WAV para que librosa pueda leerlo de forma confiable
         original_buffer_for_librosa = io.BytesIO()
         audio_pydub_original.export(original_buffer_for_librosa, format="wav")
-        original_buffer_for_librosa.seek(0) # Rebobinar el buffer
+        original_buffer_for_librosa.seek(0)
 
-        # Ahora, librosa puede cargar el WAV del buffer
-        # ESTA ES LA LÍNEA QUE FUE CAMBIADA PARA USAR SF.READ Y CAUSÓ PROBLEMAS CON WEBM DIRECTAMENTE
-        # y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True)
-        # La versión previa que funcionaba con MP3 y daba error de WebM usaba esta línea
-        y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True) # SE MANTIENE ESTA LÍNEA
-
+        y_original, sr_original = librosa.load(original_buffer_for_librosa, sr=None, mono=True)
         spectrum_original = get_spectrum_data(y_original, sr_original)
 
-        # La instancia de AudioSegment para el procesamiento será la que cargamos
         processed_audio_pydub = audio_pydub_original
 
         # --- APLICAR OPCIONES DE CONVERSIÓN ---
@@ -110,73 +102,61 @@ def upload_audio():
                     processed_audio_pydub = processed_audio_pydub.set_sample_width(3)
 
         # --- GENERAR ESPECTRO DEL AUDIO PROCESADO ---
-        # Exportar el audio procesado a un buffer WAV para que librosa pueda leerlo
         processed_buffer_for_librosa = io.BytesIO()
-        processed_audio_pydub.export(processed_buffer_for_librosa, format="wav")
+        processed_audio_pydub.export(processed_buffer_for_librosa, format="wav") # Siempre exportar a WAV para el espectro
         processed_buffer_for_librosa.seek(0)
 
-        # Usar soundfile para cargar el WAV del buffer para el espectro (más fiable)
         audio_data_processed, sr_processed = sf.read(processed_buffer_for_librosa)
         y_processed = librosa.to_mono(audio_data_processed) if audio_data_processed.ndim > 1 else audio_data_processed
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
-        # --- EXPORTAR AUDIO FINAL ---
-        export_final_buffer = io.BytesIO()
-        final_mimetype = ""
-        final_download_filename_base = f"processed_{processed_audio_pydub.frame_rate // 1000}kHz_{processed_audio_pydub.sample_width * 8}bit"
-        
-        if export_format_req == "wav":
-            processed_audio_pydub.export(export_final_buffer, format="wav")
-            final_mimetype = "audio/wav"
-            final_download_filename = f"{final_download_filename_base}.wav"
-        elif export_format_req == "mp3":
-            processed_audio_pydub.export(export_final_buffer, format="mp3")
-            final_mimetype = "audio/mpeg"
-            final_download_filename = f"{final_download_filename_base}.mp3"
-        else:
-            return jsonify({"error": "Formato de exportación no soportado"}), 400
-        
-        export_final_buffer.seek(0)
-        audio_data_to_upload = export_final_buffer.read()
+        # --- SIEMPRE EXPORTAR AUDIO PROCESADO COMO WAV A SUPABASE STORAGE ---
+        # Esto asegura que siempre haya una versión de alta calidad disponible
+        # para futuras descargas en diferentes formatos.
+        final_processed_wav_buffer = io.BytesIO()
+        processed_audio_pydub.export(final_processed_wav_buffer, format="wav") # Exportar como WAV
+        final_processed_wav_buffer.seek(0)
+        audio_data_to_upload_wav = final_processed_wav_buffer.read()
 
-        # --- Guardar en Supabase Storage ---
-        supabase_file_name = f"{uuid.uuid4().hex}.{export_format_req}"
+        supabase_file_name = f"{uuid.uuid4().hex}.wav" # Nombre de archivo con extensión .wav
         path_in_bucket = f"public/{supabase_file_name}"
+        final_mimetype_for_supabase = "audio/wav"
 
         response_upload = supabase.storage.from_("audios-convertidos").upload(
-            file=audio_data_to_upload,
+            file=audio_data_to_upload_wav, # Subir el WAV
             path=path_in_bucket,
-            file_options={"content-type": final_mimetype}
+            file_options={"content-type": final_mimetype_for_supabase}
         )
 
-        public_audio_url = f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/{path_in_bucket}"
+        public_audio_url_wav = f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/{path_in_bucket}"
         
-        app.logger.info(f"Archivo subido a Supabase Storage. URL: {public_audio_url}")
+        app.logger.info(f"Archivo WAV procesado subido a Supabase Storage. URL: {public_audio_url_wav}")
 
         # --- Guardar metadatos en Supabase Database ---
         data_to_insert = {
             "nombre_archivo_original": nombre_archivo_original,
-            "formato_exportacion": export_format_req,
+            # Ya no guardamos 'formato_exportacion' aquí, ya que siempre es WAV en Storage
             "frecuencia_muestreo": target_sample_rate_int,
             "profundidad_de_bits": target_bit_depth_int,
-            "url_audio_procesado": public_audio_url,
+            "url_audio_procesado": public_audio_url_wav, # URL del WAV guardado
             "espectro_original": spectrum_original,
             "espectro_modificado": spectrum_processed,
+            # Asumiendo que 'fecha_creacion' es manejada por defecto en Supabase o se le asigna valor
         }
 
         response_insert = supabase.table("audios_convertidos").insert(data_to_insert).execute()
 
         if response_insert.data:
-            audio_base64 = base64.b64encode(audio_data_to_upload).decode('utf-8')
+            # Para la previsualización en el frontend, puedes seguir usando base64 del WAV
+            audio_base64_wav = base64.b64encode(audio_data_to_upload_wav).decode('utf-8')
 
             return jsonify({
                 "message": "Audio procesado y almacenado exitosamente.",
                 "original_spectrum": spectrum_original,
                 "processed_spectrum": spectrum_processed,
-                "processed_audio_base64": audio_base64,
-                "processed_audio_mimetype": final_mimetype,
-                "download_filename": final_download_filename,
-                "processed_audio_url_supabase": public_audio_url
+                "processed_audio_base64": audio_base64_wav, # Ahora es base64 del WAV
+                "processed_audio_mimetype": "audio/wav", # El mimetype de la previsualización
+                "processed_audio_url_supabase_wav": public_audio_url_wav # Nueva clave para la URL del WAV
             }), 200
         else:
             raise Exception(f"Fallo al guardar metadatos en Supabase Database: {response_insert.json()}")
@@ -191,12 +171,68 @@ def upload_audio():
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
 
+# NUEVA RUTA: Para descargar el audio en formato específico (WAV o MP3)
+@app.route('/api/download_audio', methods=['GET'])
+def download_audio():
+    audio_url = request.args.get('audio_url')
+    download_format = request.args.get('format', 'wav').lower() # Default a wav si no se especifica
+    
+    if not audio_url:
+        return jsonify({"error": "URL del audio no proporcionada"}), 400
+    
+    # Validar que la URL sea de Supabase para evitar SSRF
+    if not audio_url.startswith(f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/"):
+        return jsonify({"error": "URL de audio inválida o no permitida"}), 400
+
+    try:
+        # Descargar el archivo WAV desde Supabase Storage
+        # El path dentro del bucket se extrae de la URL completa
+        path_in_bucket = audio_url.split(f"{SUPABASE_URL}/storage/v1/object/public/audios-convertidos/")[1]
+        
+        # Usar la API de almacenamiento de Supabase para descargar
+        response_download = supabase.storage.from_("audios-convertidos").download(path_in_bucket)
+        
+        if not response_download:
+            return jsonify({"error": "No se pudo descargar el archivo de Supabase Storage."}), 500
+        
+        audio_data_bytes = io.BytesIO(response_download)
+        audio_segment = AudioSegment.from_file(audio_data_bytes, format="wav") # Asumimos que lo descargamos como WAV
+
+        output_buffer = io.BytesIO()
+        filename_base = os.path.splitext(os.path.basename(path_in_bucket))[0] # Nombre base del archivo original en storage
+        
+        if download_format == 'wav':
+            audio_segment.export(output_buffer, format="wav")
+            mimetype = "audio/wav"
+            filename = f"{filename_base}.wav"
+        elif download_format == 'mp3':
+            audio_segment.export(output_buffer, format="mp3")
+            mimetype = "audio/mpeg"
+            filename = f"{filename_base}.mp3"
+        else:
+            return jsonify({"error": "Formato de descarga no soportado"}), 400
+        
+        output_buffer.seek(0)
+        
+        # Enviar el archivo al cliente
+        return send_file(
+            output_buffer,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename # Usar download_name en lugar de filename para Flask 2.x+
+        )
+
+    except Exception as e:
+        app.logger.error(f"Error al procesar la descarga de audio: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        return jsonify({"error": f"Error interno al descargar el audio. Detalles: {str(e)}"}), 500
+
 @app.route('/api/library', methods=['GET'])
 def get_converted_audios():
     try:
         response = supabase.table("audios_convertidos") \
             .select("*") \
-            .order("created_at", desc=True) \
+            .order("fecha_creacion", desc=True) \
             .limit(5) \
             .execute()
 
