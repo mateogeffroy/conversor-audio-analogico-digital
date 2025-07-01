@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 import uuid
 import soundfile as sf
-import subprocess # Asegúrate de que este import esté presente
+import subprocess
 
 
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -63,62 +63,42 @@ def upload_audio():
 
     nombre_archivo_original = file.filename
     
-    # Manejar el archivo de entrada: Guardar temporalmente y convertir a WAV con FFmpeg
-    # Usamos f-string para concatenar, que es más moderno y legible
-    temp_input_path = f"/tmp/{uuid.uuid4().hex}_input.{file.filename.split('.')[-1] if '.' in file.filename else 'tmp'}" # Extraer extensión de filename
-    file.save(temp_input_path) # Guardar el archivo subido al sistema de archivos temporal
+    temp_input_path = f"/tmp/{uuid.uuid4().hex}_input.{file.filename.split('.')[-1] if '.' in file.filename else 'tmp'}"
+    file.save(temp_input_path)
     
     temp_wav_path = f"/tmp/{uuid.uuid4().hex}_converted.wav"
 
     try:
-        # Comando ffmpeg para convertir cualquier formato de entrada a WAV
         command = [
             'ffmpeg',
             '-i', temp_input_path,
             '-acodec', 'pcm_s16le',
-            '-ar', '44100', # Default sample rate para conversión inicial a WAV
-            '-ac', '1',    # Forzar a mono
-            '-y',          # Sobrescribir si existe
+            '-ar', '44100',
+            '-ac', '1',
+            '-y',
             temp_wav_path
         ]
         
-        # Ejecutar el comando ffmpeg
         subprocess.run(command, check=True, capture_output=True)
 
-        # --- CARGA DEL AUDIO ORIGINAL PARA ESPECTRO Y PROCESAMIENTO (AHORA SIEMPRE DESDE WAV) ---
-        # Leer el WAV temporal con soundfile
         y_original, sr_original = sf.read(temp_wav_path)
-        y_original = librosa.to_mono(y_original) # Asegurar mono si soundfile lo carga como estéreo
+        y_original = librosa.to_mono(y_original)
 
         spectrum_original = get_spectrum_data(y_original, sr_original)
 
         y_processed = y_original
         sr_processed = sr_original
 
-        # --- APLICAR OPCIONES DE CONVERSIÓN ---
-        # Remuestreo con librosa.resample
         if target_sample_rate_int and sr_processed != target_sample_rate_int:
             y_processed = librosa.resample(y_processed, orig_sr=sr_processed, target_sr=target_sample_rate_int)
             sr_processed = target_sample_rate_int
         
-        # Cuantización con numpy (soundfile maneja los bits al escribir)
-        if target_bit_depth_int:
-            # librosa ya devuelve floats en [-1, 1]. soundfile puede manejar la escala a int.
-            # Aquí ajustamos el dtype para que soundfile sepa qué tipo de int escribir.
-            if target_bit_depth_int == 8:
-                # Si viene de float64 (librosa), soundfile puede escalarlo a int8 con subtype='PCM_S8'
-                y_processed = np.array(y_processed, dtype=np.float32) # Asegurar float32 para soundfile
-            elif target_bit_depth_int == 16:
-                y_processed = np.array(y_processed, dtype=np.float32)
-            elif target_bit_depth_int == 24:
-                y_processed = np.array(y_processed, dtype=np.float32)
-            else:
-                pass # No aplicar cuantización si es otro valor
+        # Eliminadas las conversiones manuales a int8, int16, int32.
+        # soundfile.write espera floats en [-1.0, 1.0] y los escala al subtipo.
+        y_processed = np.array(y_processed, dtype=np.float32) # Asegurar dtype float para soundfile
 
-        # --- GENERAR ESPECTRO DEL AUDIO PROCESADO ---
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
-        # --- SIEMPRE EXPORTAR AUDIO PROCESADO COMO WAV A SUPABASE STORAGE ---
         final_processed_wav_buffer = io.BytesIO()
         
         sf_subtype = None
@@ -128,8 +108,8 @@ def upload_audio():
             sf_subtype = 'PCM_16'
         elif target_bit_depth_int == 24:
             sf_subtype = 'PCM_24'
-        elif target_bit_depth_int is None: # Si es 'Original', déjalo en float (soundfile lo convierte a float32 o PCM_F32)
-            sf_subtype = 'PCM_F32' # Mantener como float 32-bit para alta calidad si no se especifica bit depth
+        elif target_bit_depth_int is None:
+            sf_subtype = 'PCM_F32'
         
         sf.write(final_processed_wav_buffer, y_processed, sr_processed, format='WAV', subtype=sf_subtype)
         
@@ -183,7 +163,6 @@ def upload_audio():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al procesar el audio. Detalles: {str(e)}"}), 500
     finally:
-        # Asegurarse de limpiar los archivos temporales
         if os.path.exists(temp_input_path):
             os.remove(temp_input_path)
         if os.path.exists(temp_wav_path):
@@ -239,7 +218,7 @@ def download_audio():
             filename = f"{filename_base}.mp3"
 
         elif download_format == 'wav':
-            output_buffer = audio_data_bytes_from_supabase # El buffer ya es WAV
+            output_buffer = audio_data_bytes_from_supabase
             mimetype = "audio/wav"
             filename = f"{filename_base}.wav"
         else:
@@ -262,7 +241,6 @@ def download_audio():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al descargar el audio. Detalles: {str(e)}"}), 500
     finally:
-        # Limpiar archivos temporales en la descarga
         if temp_wav_path_download and os.path.exists(temp_wav_path_download):
             os.remove(temp_wav_path_download)
         if output_temp_path_download and os.path.exists(output_temp_path_download):
