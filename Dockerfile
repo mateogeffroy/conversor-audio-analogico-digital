@@ -1,13 +1,9 @@
 # Dockerfile
 
-# Usamos una imagen de Miniconda/Mamba que ya incluye Python y las librerías científicas optimizadas
-# Esto resuelve los problemas de compilación de numpy, scipy, librosa, y Numba/LLVMLite.
-# Recomiendo 'mambaorg/micromamba:latest-debian' o 'continuumio/miniconda3:latest'
-FROM mambaorg/micromamba:latest-debian
+# OPCIÓN A (RECOMENDADA): Usar una versión específica y estable
+FROM mambaorg/micromamba:1.5.8-0
 
 # Instala SOLO las dependencias de APT que no vienen con Conda (principalmente FFmpeg y GStreamer)
-# micromamba ya viene con 'build-essential' virtualmente, y maneja python, gfortran, etc.
-# libsndfile1-dev es para soundfile
 RUN apt-get update -y && \
     apt-get install -y \
     ffmpeg \
@@ -23,18 +19,16 @@ RUN apt-get update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # Crea un entorno Conda/Mamba y activa el entorno base para instalar Python libs
-# Mamba es mucho más rápido que Conda para resolver entornos
+# Asegúrate de que Python 3.13 sea compatible con la versión de micromamba que elijas.
 RUN micromamba activate base && \
     micromamba install -y python=3.13 && \
     micromamba clean --all --yes
 
 WORKDIR /app
 
-# Copia requirements.txt y usa pip (dentro del entorno micromamba)
 COPY backend/requirements.txt ./requirements.txt
 RUN micromamba run -n base pip install --no-cache-dir -r requirements.txt
 
-# Copia el resto del código de tu aplicación
 COPY backend/ .
 
 EXPOSE 5000
