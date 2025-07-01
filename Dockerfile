@@ -1,7 +1,7 @@
 # Dockerfile
 
 # OPCIÓN A (RECOMENDADA): Usar una versión específica y estable
-FROM mambaorg/micromamba:1.5.8-0
+FROM mambaorg/micromamba:latest
 
 # Instala SOLO las dependencias de APT que no vienen con Conda (principalmente FFmpeg y GStreamer)
 RUN apt-get update -y && \
