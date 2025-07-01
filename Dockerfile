@@ -24,4 +24,6 @@ COPY backend/ .
 
 EXPOSE 5000
 
+ENV AUDIEREAD_PROCESSES=ffmpeg,soundfile 
+
 CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "1", "--timeout", "120"]
