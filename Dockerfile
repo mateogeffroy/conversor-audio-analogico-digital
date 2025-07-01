@@ -8,7 +8,8 @@ RUN apt-get update -y && \
     gfortran \
     libatlas-base-dev \
     libopenblas-dev \
-    pkg-config && \
+    pkg-config \
+    python3-dev && \
     rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools wheel
