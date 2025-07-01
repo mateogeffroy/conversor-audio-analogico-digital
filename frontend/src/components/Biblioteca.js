@@ -94,7 +94,7 @@ function Biblioteca() {
 
             {!selectedAudio ? (
                 <div className="biblioteca-container">
-                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos Recientes</h2>
+                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos</h2>
                     {audios.length === 0 ? (
                         <p className="empty-message">No hay audios convertidos aún.</p>
                     ) : (
