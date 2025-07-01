@@ -95,22 +95,25 @@ def upload_audio():
         
         # Eliminadas las conversiones manuales a int8, int16, int32.
         # soundfile.write espera floats en [-1.0, 1.0] y los escala al subtipo.
-        y_processed = np.array(y_processed, dtype=np.float32) # Asegurar dtype float para soundfile
+        y_processed = np.array(y_processed, dtype=np.float32)
 
         spectrum_processed = get_spectrum_data(y_processed, sr_processed)
 
         final_processed_wav_buffer = io.BytesIO()
         
         sf_subtype = None
+        # Definir el subtipo para soundfile.write
         if target_bit_depth_int == 8:
-            sf_subtype = 'PCM_S8'
+            sf_subtype = 'PCM_S8' # signed 8-bit PCM
         elif target_bit_depth_int == 16:
-            sf_subtype = 'PCM_16'
+            sf_subtype = 'PCM_16' # signed 16-bit PCM
         elif target_bit_depth_int == 24:
-            sf_subtype = 'PCM_24'
-        elif target_bit_depth_int is None:
-            sf_subtype = 'PCM_F32'
-        
+            sf_subtype = 'PCM_24' # signed 24-bit PCM
+        else: # Si es 'Original' o un valor no reconocido, por defecto a float32
+            sf_subtype = 'PCM_F32' # Usar float 32-bit para alta calidad y compatibilidad
+
+        # Escribir el audio procesado a un buffer WAV usando soundfile
+        # soundfile.write tomará los floats [-1.0, 1.0] y los convertirá al subtipo especificado
         sf.write(final_processed_wav_buffer, y_processed, sr_processed, format='WAV', subtype=sf_subtype)
         
         final_processed_wav_buffer.seek(0)
