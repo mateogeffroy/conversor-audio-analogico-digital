@@ -34,7 +34,7 @@ function Documentacion() {
             </div>
 
             <div className='container-tecnologias'>
-                <h1>Tecnologías Utilizadas</h1>
+                <h1>Frameworks utilizados</h1>
                 <div className='tecnologias-utilizadas'>
                     <div className='react-div'>
                         <div className='react-logo'>
@@ -48,14 +48,28 @@ function Documentacion() {
                             <img src="/flask-logo.svg" alt="Flask Logo"/>
                         </div>
                         <h3>Backend</h3>
-                        <p>Procesamiento de audio y lógica del servidor.</p>
+                        <p>Procesamiento de audio y definición de los endpoints.</p>
+                    </div>
+                </div>
+                <h1>Tecnologías de hosteo</h1>
+                <div className='tecnologias-hosting'>
+                    <div className='render-div'>
+                        <div className='render-logo'>
+                            <img src="/render-logo.png" alt="Render Logo"/>
+                        </div>
+                        <h3>Gestor de backend</h3>
+                    </div>
+                    <div className='vercel-div'>
+                        <div className='vercel-logo'>
+                            <img src="/vercel-logo.png" alt="Vercel Logo"/>
+                        </div>
+                        <h3>Gestor de frontend</h3>
                     </div>
                     <div className='supabase-div'>
                         <div className='supabase-logo'>
                             <img src="/supabase-logo.png" alt="Supabase Logo"/>
                         </div>
-                        <h3>Base de Datos</h3>
-                        <p>Gestión y almacenamiento de los audios procesados</p>
+                        <h3>Gestor de base de datos</h3>
                     </div>
                 </div>
                 <h1>Herramientas utilizadas</h1>

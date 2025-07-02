@@ -186,7 +186,8 @@ body {
     filter: drop-shadow(0px 0px 8px rgba(0, 0, 0, 0.4)); /* Sombra al hover en media query */
   }
   .tecnologias-utilizadas,
-  .herramientas-utilizadas {
+  .herramientas-utilizadas,
+  .tecnologias-hosting {
     gap: 30px; /* Reduce el espacio entre divs en pantallas más pequeñas */
     padding: 30px 15px; /* Reduce el padding en pantallas más pequeñas */
   }
@@ -194,7 +195,9 @@ body {
   .flask-div,
   .supabase-div,
   .vsc-div,
-  .git-div {
+  .git-div,
+  .render-div,
+  .vercel-div {
     max-width: 150px; /* Ajusta el ancho máximo para dispositivos móviles */
   }
 }
@@ -217,7 +220,8 @@ body {
     width: 80px;
   }
   .tecnologias-utilizadas,
-  .herramientas-utilizadas {
+  .herramientas-utilizadas,
+  .tecnologias-hosting {
     gap: 20px; /* Más reducción de espacio */
     padding: 20px 10px; /* Más reducción de padding */
   }
@@ -225,7 +229,9 @@ body {
   .flask-div,
   .supabase-div,
   .vsc-div,
-  .git-div {
+  .git-div
+  .render-div,
+  .vercel-div {
     max-width: 120px; /* Ajusta aún más el ancho máximo */
   }
 }
@@ -241,7 +247,8 @@ body {
 }
 
 .tecnologias-utilizadas,
-.herramientas-utilizadas {
+.herramientas-utilizadas,
+.tecnologias-hosting {
   display: flex;
   flex-flow: row wrap;
   justify-content: center; /* Centra los elementos horizontalmente */
@@ -250,7 +257,9 @@ body {
 
 .react-logo,
 .flask-logo,
-.supabase-logo {
+.supabase-logo,
+.vercel-logo,
+.render-logo, {
   height: 150px;
   display: flex;
   justify-content: center;
@@ -261,7 +270,9 @@ body {
 .flask-div,
 .supabase-div,
 .vsc-div,
-.git-div {
+.git-div,
+.render-div,
+.vercel-div {
   display: flex;
   flex-flow: column nowrap; /* Asegura que los elementos dentro del div vayan hacia abajo */
   align-items: center;
