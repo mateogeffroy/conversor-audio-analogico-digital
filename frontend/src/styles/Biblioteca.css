@@ -1,221 +1,216 @@
-/* frontend/src/styles/Biblioteca.css */
+:root {
+  --color-primary: #8D021F;
+  --color-primary-dark: #640216;
+  --color-danger: #e74c3c;
+  --color-danger-dark: #c0392b;
+  --color-text-light: #ffffff;
+  --color-border: #e0e0e0;
+}
 
 .biblioteca-wrapper {
-    padding: 20px;
-    max-width: 1200px;
-    margin: 0 auto;
-    font-family: Arial, sans-serif;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
 }
 
 .biblioteca-container, .selected-audio-details {
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 25px;
-    margin-top: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 25px;
+  margin-top: 20px;
 }
 
 .biblioteca-titulo {
-    text-align: center;
-    color: #333;
-    margin-bottom: 25px;
-    font-size: 1.8em;
+  text-align: center;
+  color: #333;
+  margin: 0 0 25px 0;
+  font-size: 1.8em;
 }
 
 .loading-message, .error-message, .empty-message {
-    text-align: center;
-    padding: 20px;
-    color: #555;
+  text-align: center;
+  padding: 40px 20px;
+  color: #555;
+  font-size: 1.1em;
 }
 
 .error-message {
-    color: #d9534f;
-    font-weight: bold;
+  color: var(--color-danger);
+  font-weight: bold;
 }
 
-.back-button {
-    background-color: #6c757d;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 1em;
-    transition: background-color 0.2s;
-    margin-bottom: 20px;
+.back-button, .back-to-list-button {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 10px 15px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+  margin-bottom: 20px;
 }
 
-.back-button:hover {
-    background-color: #5a6268;
+.back-button:hover, .back-to-list-button:hover {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
 }
 
 .audio-list {
-    list-style: none;
-    padding: 0;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 
 .audio-item {
-    background-color: #fff;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    padding: 15px 20px;
-    margin-bottom: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s, transform 0.2s;
+  background-color: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 15px 20px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
 .audio-item:hover {
-    background-color: #e9ecef;
-    transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-3px);
 }
 
-.audio-item h3 {
-    margin: 0;
-    color: #4A90E2;
-    font-size: 1.2em;
+.audio-item-info h3 {
+  margin: 0 0 5px 0;
+  color: var(--color-primary);
+  font-size: 1.2em;
 }
 
-.audio-item p {
-    margin: 0;
-    color: #666;
-    font-size: 0.9em;
+.audio-item-info p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9em;
 }
 
-.view-details-button {
-    align-self: flex-end;
-    background-color: #4A90E2;
-    color: white;
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.85em;
-    transition: background-color 0.2s;
-    margin-top: 10px;
-}
-
-.view-details-button:hover {
-    background-color: #367ac2;
-}
-
-/* Selected Audio Details */
-.selected-audio-details h2 {
-    text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-}
-
-.back-to-list-button {
-    background-color: #6c757d;
-    color: white;
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.95em;
-    transition: background-color 0.2s;
-    margin-bottom: 20px;
-}
-
-.back-to-list-button:hover {
-    background-color: #5a6268;
-}
-
-.audio-player-section, .options-info-section, .spectrum-charts-section {
-    margin-bottom: 25px;
-    padding: 15px;
-    border: 1px solid #eee;
-    border-radius: 7px;
-    background-color: #fff;
-}
-
-.audio-player-section h4, .options-info-section h4, .spectrum-charts-section h4 {
-    color: #4A90E2;
-    margin-top: 0;
-    margin-bottom: 15px;
-    font-size: 1.1em;
-    text-align: center;
-}
-
-.processed-audio-player {
-    width: 100%;
-    margin-top: 10px;
-}
-
-.options-info-section p {
-    margin: 5px 0;
-    font-size: 0.95em;
-    color: #444;
-}
-
-.spectrum-charts-section {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: space-around;
-}
-
-.chart-container {
-    flex: 1;
-    min-width: 300px; /* Asegura que los gráficos no sean demasiado pequeños */
-    max-width: 48%; /* Para dos columnas */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-    border-radius: 5px;
-    padding: 10px;
-    background-color: #fff;
-}
-
-@media (max-width: 768px) {
-    .spectrum-charts-section {
-        flex-direction: column;
-        align-items: center;
-    }
-    .chart-container {
-        max-width: 95%; /* Una columna en pantallas pequeñas */
-    }
-}
-
-/* Biblioteca.css */
-
-/* Estilo para los botones de acción en la lista */
 .audio-item-actions {
-    display: flex;
-    gap: 10px; /* Espacio entre botones */
-    margin-top: 10px;
-    justify-content: flex-end; /* Alinea los botones a la derecha */
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
-/* Estilo para el botón de eliminar (general) */
+.view-details-button, .delete-button, .conversor-boton {
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  border: 2px solid transparent;
+  transition: all 0.2s ease-in-out;
+}
+
+.view-details-button, .conversor-boton {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+}
+
+.view-details-button:hover, .conversor-boton:hover {
+  background-color: var(--color-primary-dark);
+}
+
 .delete-button {
-    background-color: #e74c3c; /* Rojo para eliminar */
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 0.9em;
-    transition: background-color 0.2s ease;
+  background-color: var(--color-danger);
+  color: var(--color-text-light);
 }
 
 .delete-button:hover {
-    background-color: #c0392b;
+  background-color: var(--color-danger-dark);
 }
 
-.delete-button:disabled {
-    background-color: #cccccc;
-    cursor: not-allowed;
+.selected-audio-filename {
+  text-align: center;
+  font-size: 1.2em;
+  color: #555;
+  margin-top: -15px;
+  margin-bottom: 25px;
+  word-break: break-all;
 }
 
-/* Estilo para el botón de eliminar en la vista de detalles */
+.details-section {
+  margin-bottom: 25px;
+  padding: 20px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  background-color: #fcfcfc;
+}
+
+.details-section h4 {
+  color: #333;
+  margin: 0 0 15px 0;
+  font-size: 1.2em;
+  text-align: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 10px;
+}
+
+.processed-audio-player {
+  width: 100%;
+}
+
+.download-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.details-section p {
+  margin: 8px 0;
+  font-size: 1em;
+  color: #444;
+}
+
+.spectrum-charts-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+}
+
+.chart-container {
+  flex: 1;
+  min-width: 300px;
+  max-width: 500px;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
 .selected-audio-details-actions {
-    margin-top: 30px;
-    text-align: center;
+  margin-top: 30px;
+  text-align: center;
 }
 
 .delete-button-large {
-    padding: 12px 20px;
-    font-size: 1.1em;
+  padding: 12px 25px;
+  font-size: 1em;
+}
+
+@media (max-width: 768px) {
+  .audio-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .audio-item-actions {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .audio-item-actions > button {
+    flex-grow: 1;
+  }
 }

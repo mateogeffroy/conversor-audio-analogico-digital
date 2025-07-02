@@ -1,19 +1,38 @@
 .footer {
-  background-color: #6c757d;
+  background-color: #8D021F;
   color: white;
-  padding: 15px;
+  padding: 20px 25px;
   flex-shrink: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.footer-integrantes {
-  margin: 0 0 0 15px;
-  font-size: 0.9em;
+  min-height: 90px;
 }
 
 #logo-utn {
   width: 50px;
-  height: 50px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.footer-integrantes {
+  margin: 0 0 0 20px;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    flex-direction: column;
+    text-align: center;
+    padding: 20px 15px;
+  }
+
+  #logo-utn {
+    margin: 0 0 15px 0;
+  }
+
+  .footer-integrantes {
+    margin: 0;
+  }
 }

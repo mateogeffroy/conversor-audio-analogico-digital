@@ -1,34 +1,71 @@
 .header {
-  background-color: black;
+  background-color: #000000;
   color: white;
-  padding: 10px 20px;
+  padding: 10px 25px;
   display: flex;
   align-items: center;
   flex-shrink: 0;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 1000;
+  min-height: 80px;
 }
+
 .header-icono {
-  height: 60px;
-  width: 60px;
+  height: 50px;
+  width: 50px;
   margin-right: 20px;
+  flex-shrink: 0;
 }
+
 .header-titulo {
-  font-size: 1.8em;
+  font-size: 1.6em;
   margin: 0;
   flex-grow: 1;
   text-align: center;
 }
+
 .header-nav {
-  margin-left: auto;
+  display: flex;
 }
+
 .header-link {
   color: white;
   margin: 0 15px;
   text-decoration: none;
   font-size: 1.1em;
+  white-space: nowrap;
 }
+
 .header-link:hover {
   text-decoration: underline;
+}
+
+/* Media Query para Tabletas y Móviles */
+@media (max-width: 768px) {
+  .header {
+    flex-direction: column;
+    padding: 20px 15px;
+    text-align: center;
+  }
+
+  .header-icono {
+    margin: 0 0 15px 0;
+  }
+
+  .header-titulo {
+    font-size: 1.3em;
+    margin-bottom: 15px;
+    line-height: 1.2;
+  }
+
+  .header-nav {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-link {
+    margin: 0 10px;
+    font-size: 1em;
+  }
 }

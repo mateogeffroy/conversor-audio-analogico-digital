@@ -32,7 +32,7 @@ function Conversor() {
   //URL de previsualización para el audio procesado.
   const [processedAudioPreviewSrc, setProcessedAudioPreviewSrc] = useState(null);
   //Información del audio procesado (ej. URL de Supabase para el WAV).
-  const [processedAudioInfo, setProcessedAudioInfo] = useState(null); 
+  const [processedAudioInfo, setProcessedAudioInfo] = useState(null);
   //Estado para el efecto visual de arrastrar y soltar.
   const [isDragging, setIsDragging] = useState(false);
   //Indica si el audio está en proceso de conversión.
@@ -114,7 +114,7 @@ function Conversor() {
       mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
 
       audioChunksRef.current = [];
-      
+
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
@@ -228,10 +228,10 @@ function Conversor() {
       if (response.ok) {
         setOriginalSpectrumData(result.original_spectrum);
         setProcessedSpectrumData(result.processed_spectrum);
-        const audioSrc = result.processed_audio_url_supabase_wav; 
+        const audioSrc = result.processed_audio_url_supabase_wav;
         setProcessedAudioPreviewSrc(audioSrc);
-        setProcessedAudioInfo({ 
-            supabaseWavUrl: result.processed_audio_url_supabase_wav 
+        setProcessedAudioInfo({
+            supabaseWavUrl: result.processed_audio_url_supabase_wav
         });
       } else {
         alert(`Error del servidor: ${result.error || 'Ocurrió un error desconocido.'}`);
@@ -302,6 +302,18 @@ function Conversor() {
 
   return (
     <div className="conversor-wrapper">
+      {!hasAudio && (
+        <div className="biblioteca-link-container">
+          <button
+            className='conversor-boton conversor-boton-secundario'
+            onClick={() => navigate('/biblioteca')}
+            disabled={isLoading}
+          >
+            Ver Biblioteca de Audios
+          </button>
+        </div>
+      )}
+
       {!isLoading && !processedAudioPreviewSrc && (
         <>
           {!hasAudio ? (
@@ -312,7 +324,7 @@ function Conversor() {
                 <button
                   className='conversor-boton'
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  style={{ backgroundColor: isRecording ? 'red' : '#4A90E2' }}
+                  style={{ backgroundColor: isRecording ? '#CC0000' : '#8D021F' }}
                   disabled={isLoading}
                 >
                   {isRecording ? 'Detener Grabación' : 'Iniciar Grabación'}
@@ -339,27 +351,18 @@ function Conversor() {
                   <span className="conversor-drop-zone-button">Selecciona un archivo</span>
                 </label>
               </div>
-              <div className='conversor-container-botones' style={{marginBottom: '20px'}}>
-                <button
-                  className='conversor-boton conversor-boton-secundario'
-                  onClick={() => navigate('/biblioteca')}
-                  disabled={isLoading}
-                >
-                  Ver Biblioteca de Audios
-                </button>
-              </div>
             </div>
           ) : (
             <>
               <div className="conversor-container">
                 {audioBlob && (
                   <>
-                    <p className="conversor-texto">Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</p>
+                    <h2 className="conversor-titulo">Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</h2>
                     <div className='conversor-audio-player-wrapper'>
                       <div className='conversor-audio-player-container'>
                         <audio className="conversor-audio" src={originalAudioSrc} controls />
                       </div>
-                      <button className='conversor-boton' onClick={handleClearAudio} disabled={isLoading}>
+                      <button className='conversor-boton conversor-boton-secundario' onClick={handleClearAudio} disabled={isLoading}>
                         Cambiar Audio
                       </button>
                     </div>
@@ -367,12 +370,12 @@ function Conversor() {
                 )}
                 {uploadedFile && (
                   <>
-                    <p className="conversor-texto">Archivo Subido: {uploadedFile.name}</p>
+                    <h2 className="conversor-titulo">Archivo Subido: {uploadedFile.name}</h2>
                     <div className='conversor-audio-player-wrapper'>
                       <div className='conversor-audio-player-container'>
                         <audio className="conversor-audio" src={originalAudioSrc} controls />
                       </div>
-                      <button className='conversor-boton' onClick={handleClearAudio} disabled={isLoading}>
+                      <button className='conversor-boton conversor-boton-secundario' onClick={handleClearAudio} disabled={isLoading}>
                         Cambiar Audio
                       </button>
                     </div>

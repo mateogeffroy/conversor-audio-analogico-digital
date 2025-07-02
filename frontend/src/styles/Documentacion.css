@@ -1,30 +1,10 @@
-body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  font-family: sans-serif;
-  font-size: 16px;
+.doc-page-wrapper {
+  width: 100%;
 }
 
-@media (min-width: 768px) {
-  body {
-    font-size: 18px;
-  }
-}
-
-@media (min-width: 1200px) {
-  body {
-    font-size: 20px;
-  }
-}
-
-.home {
-  text-align: center;
-}
-
-.home-hero {
-  min-height: calc(100vh - var(--header-height, 60px) - var(--footer-height, 0px));
-  width: 100vw;
+.doc-hero {
+  min-height: 90vh;
+  width: 100%;
   position: relative;
   overflow: hidden;
   display: flex;
@@ -32,11 +12,12 @@ body {
   justify-content: center;
   align-items: center;
   color: white;
+  text-align: center;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
   z-index: 1;
 }
 
-.home-hero::before {
+.doc-hero::before {
   content: '';
   position: absolute;
   top: 0;
@@ -46,238 +27,194 @@ body {
   background-image: url('../../public/fondo-hero.jpg');
   background-size: cover;
   background-position: center;
-  background-repeat: no-repeat;
   filter: blur(5px);
   transform: scale(1.1);
   z-index: -1;
 }
 
-.home-hero::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.4);
-    z-index: -1;
+.doc-hero::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: -1;
 }
 
 .hero-content {
-    position: relative;
-    padding: 20px;
-    max-width: 800px;
-    z-index: 2;
-    margin-bottom: 80px;
+  padding: 20px;
+  max-width: 800px;
 }
 
-.home-hero h2 {
-    font-size: 3em;
-    margin-bottom: 15px;
+.hero-content h2 {
+  font-size: 3em;
+  margin-bottom: 15px;
 }
 
-.home-hero p {
-    font-size: 1.3em;
-    margin-bottom: 30px;
-    line-height: 1.6;
+.hero-content p {
+  font-size: 1.3em;
+  margin-bottom: 30px;
+  line-height: 1.6;
 }
 
-.home-button {
-  background-color: #4A90E2;
+.doc-hero-button {
+  background-color: #8D021F;
   color: white;
   padding: 12px 25px;
   text-decoration: none;
   border-radius: 5px;
   font-size: 1.2em;
-  margin-top: 20px;
+  font-weight: 500;
   display: inline-block;
-  transition: background-color 0.2s ease-in-out;
+  transition: all 0.2s ease-in-out;
 }
 
-.home-button:hover {
-  background-color: #357ABD;
+.doc-hero-button:hover {
+  background-color: #640216;
+  transform: translateY(-2px);
 }
 
 .scroll-arrow {
   position: absolute;
-  bottom: 80px; /* Cambia este valor a un número mayor para subir la flecha */
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   width: 40px;
   height: 40px;
   color: white;
-  z-index: 2;
   animation: bounce 2s infinite;
 }
 
 @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {
-        transform: translateX(-50%) translateY(0);
-    }
-    40% {
-        transform: translateX(-50%) translateY(5px);
-    }
-    60% {
-        transform: translateX(-50%) translateY(2px);
-    }
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  40% {
+    transform: translateX(-50%) translateY(10px);
+  }
+  60% {
+    transform: translateX(-50%) translateY(5px);
+  }
 }
 
-.container-tecnologias {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 50px;
+.doc-sections-container {
+  background-color: #ffffff;
   padding: 50px 20px;
-  background-color: #f0f2f5;
-  border-top: 1px solid #e0e0e0;
+}
+
+.doc-section {
+  max-width: 1200px;
+  margin: 0 auto 50px auto;
+}
+
+.section-title {
+  font-size: 2.2em;
+  text-align: center;
+  margin-bottom: 40px;
+  color: #333;
+  position: relative;
+  padding-bottom: 10px;
+}
+
+.section-title::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 3px;
+  background-color: #8D021F;
+}
+
+.tech-grid {
+  display: flex;
   flex-wrap: wrap;
-  max-width: 100vw;
-  box-sizing: border-box;
+  justify-content: center;
+  gap: 30px;
 }
 
-.container-tecnologias img {
-  width: 150px;
-  height: auto;
+.tech-card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 25px;
+  text-align: center;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.tech-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.tech-logo-container {
+  height: 100px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tech-card img {
+  max-height: 100%;
+  max-width: 150px;
   object-fit: contain;
-  transition: transform 0.3s ease-in-out, filter 0.3s ease-in-out;
-  max-width: 100%;
-  box-sizing: border-box;
-  filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0)); /* Sombra inicial transparente (no visible) */
 }
 
-.container-tecnologias img:hover {
-  transform: scale(1.1);
-  filter: drop-shadow(0px 0px 12px rgba(0, 0, 0, 0.6)); /* Sombra visible al pasar el ratón */
+.tech-card h3 {
+  font-size: 1.4em;
+  color: #333;
+  margin: 0 0 10px 0;
 }
 
-:root {
-  --header-height: 60px;
-  --footer-height: 0px;
+.tech-card p {
+  font-size: 1em;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
 }
 
 @media (max-width: 768px) {
-  .hero-content {
-    margin-bottom: 60px;
-  }
-  .home-hero h2 {
+  .hero-content h2 {
     font-size: 2.2em;
   }
-  .home-hero p {
+  .hero-content p {
     font-size: 1.1em;
   }
-  .home-button {
-    font-size: 1.1em;
-    padding: 10px 20px;
+  .section-title {
+    font-size: 1.8em;
   }
-  .scroll-arrow {
-    width: 30px;
-    height: 30px;
-    bottom: 60px;
-  }
-  .container-tecnologias {
-    gap: 30px;
-    padding: 30px 15px;
-  }
-  .container-tecnologias img {
-    width: 100px;
-    filter: drop-shadow(0px 0px 0px rgba(0, 0, 0, 0)); /* Sombra inicial transparente en media query */
-  }
-  .container-tecnologias img:hover {
-    filter: drop-shadow(0px 0px 8px rgba(0, 0, 0, 0.4)); /* Sombra al hover en media query */
-  }
-  .tecnologias-utilizadas,
-  .herramientas-utilizadas,
-  .tecnologias-hosting {
-    gap: 30px; /* Reduce el espacio entre divs en pantallas más pequeñas */
-    padding: 30px 15px; /* Reduce el padding en pantallas más pequeñas */
-  }
-  .react-div,
-  .flask-div,
-  .supabase-div,
-  .vsc-div,
-  .git-div,
-  .render-div,
-  .vercel-div {
-    max-width: 150px; /* Ajusta el ancho máximo para dispositivos móviles */
+  .tech-card {
+    width: 250px;
   }
 }
 
 @media (max-width: 480px) {
-  .hero-content {
-    margin-bottom: 50px;
+  .doc-sections-container {
+    padding: 30px 15px;
   }
-  .home-hero h2 {
+  .hero-content h2 {
     font-size: 1.8em;
   }
-  .home-hero p {
+  .hero-content p {
     font-size: 1em;
   }
-  .home-button {
+  .doc-hero-button {
     font-size: 1em;
-    padding: 8px 18px;
+    padding: 10px 20px;
   }
-  .container-tecnologias img {
-    width: 80px;
+  .tech-grid {
+    gap: 20px;
   }
-  .tecnologias-utilizadas,
-  .herramientas-utilizadas,
-  .tecnologias-hosting {
-    gap: 20px; /* Más reducción de espacio */
-    padding: 20px 10px; /* Más reducción de padding */
+  .tech-card {
+    width: 100%;
+    max-width: 300px;
   }
-  .react-div,
-  .flask-div,
-  .supabase-div,
-  .vsc-div,
-  .git-div
-  .render-div,
-  .vercel-div {
-    max-width: 120px; /* Ajusta aún más el ancho máximo */
-  }
-}
-
-.container-tecnologias {
-  display: flex;
-  flex-flow: column nowrap;
-  justify-content: center;
-  align-items: center;
-  background-color: #f0f2f5;
-  max-width: 100vw;
-  box-sizing: border-box;
-}
-
-.tecnologias-utilizadas,
-.herramientas-utilizadas,
-.tecnologias-hosting {
-  display: flex;
-  flex-flow: row wrap;
-  justify-content: center; /* Centra los elementos horizontalmente */
-  box-sizing: border-box; /* Incluye padding y border en el ancho total */
-}
-
-.react-logo,
-.flask-logo,
-.supabase-logo,
-.vercel-logo,
-.render-logo, {
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  align-items: center; /* Centra la imagen verticalmente si el logo es más pequeño que el contenedor */
-}
-
-.react-div,
-.flask-div,
-.supabase-div,
-.vsc-div,
-.git-div,
-.render-div,
-.vercel-div {
-  display: flex;
-  flex-flow: column nowrap; /* Asegura que los elementos dentro del div vayan hacia abajo */
-  align-items: center;
-  text-align: center; /* Centra el texto */
-  max-width: 200px; /* Define un ancho máximo para que el texto se "adapte" y salte de línea */
-  flex-basis: auto; /* Permite que el elemento ajuste su tamaño basado en el contenido y el espacio disponible */
-  padding: 10px; /* Pequeño padding interno si lo deseas */
 }

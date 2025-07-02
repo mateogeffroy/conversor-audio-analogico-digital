@@ -27,11 +27,11 @@ function Biblioteca() {
             setLoading(true);
             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
             const response = await fetch(`${apiBaseUrl}/api/library`);
-            
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            
+
             const data = await response.json();
             setAudios(data);
             setError(null);
@@ -141,14 +141,14 @@ function Biblioteca() {
 
             {!selectedAudio ? (
                 <div className="biblioteca-container">
-                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos Recientes</h2>
+                    <h2 className='biblioteca-titulo'>Biblioteca de Audios Convertidos</h2>
                     {audios.length === 0 ? (
                         <p className="empty-message">No hay audios convertidos aún.</p>
                     ) : (
                         <ul className="audio-list">
                             {audios.map((audio) => (
-                                <li key={audio.id} className="audio-item">
-                                    <div onClick={() => handleSelectAudio(audio)}>
+                                <li key={audio.id} className="audio-item" onClick={() => handleSelectAudio(audio)}>
+                                    <div className="audio-item-info">
                                         <h3>{audio.nombre_archivo_original || `Audio ${audio.id.substring(0, 8)}`}</h3>
                                         <p>Fecha: {new Date(audio.fecha_creacion).toLocaleString()}</p>
                                     </div>
@@ -170,9 +170,10 @@ function Biblioteca() {
                     <button className="back-to-list-button" onClick={handleBackToList}>
                         ← Volver a la lista
                     </button>
-                    <h2>Detalles del Audio: {selectedAudio.nombre_archivo_original || `Audio ${selectedAudio.id.substring(0, 8)}`}</h2>
+                    <h2 className='biblioteca-titulo'>Detalles del Audio</h2>
+                    <p className='selected-audio-filename'>{selectedAudio.nombre_archivo_original || `Audio ${selectedAudio.id.substring(0, 8)}`}</p>
 
-                    <div className="audio-player-section">
+                    <div className="details-section">
                         <h4>Audio Procesado</h4>
                         <audio controls src={selectedAudio.url_audio_procesado} className="processed-audio-player" />
                         <div className="download-buttons-container">
@@ -183,7 +184,7 @@ function Biblioteca() {
                                     'wav'
                                 )
                             }>
-                                Descargar como WAV
+                                Descargar WAV
                             </button>
                             <button className="conversor-boton" onClick={() =>
                                 handleDownloadFromLibrary(
@@ -192,39 +193,39 @@ function Biblioteca() {
                                     'mp3'
                                 )
                             }>
-                                Descargar como MP3
+                                Descargar MP3
                             </button>
                         </div>
                     </div>
 
-                    <div className="options-info-section">
+                    <div className="details-section">
                         <h4>Opciones de Conversión</h4>
                         <p><strong>Tasa de Muestreo:</strong> {selectedAudio.frecuencia_muestreo ? `${selectedAudio.frecuencia_muestreo / 1000} kHz` : 'Original'}</p>
                         <p><strong>Profundidad de Bits:</strong> {selectedAudio.profundidad_de_bits ? `${selectedAudio.profundidad_de_bits} bits` : 'Original'}</p>
-                        <p><strong>Fecha de Conversión:</strong> {selectedAudio.fecha_creacion ? new Date(selectedAudio.fecha_creacion).toLocaleString() : 'N/A'}</p>
+                        <p><strong>Fecha:</strong> {selectedAudio.fecha_creacion ? new Date(selectedAudio.fecha_creacion).toLocaleString() : 'N/A'}</p>
                     </div>
 
                     <div className="spectrum-charts-section">
-                        <div className="chart-container">
-                            {selectedAudio.espectro_original && (
+                        {selectedAudio.espectro_original && (
+                            <div className="chart-container">
                                 <GraficoEspectro
                                     spectrumData={selectedAudio.espectro_original}
                                     chartTitle="Espectro Original"
                                 />
-                            )}
-                        </div>
-                        <div className="chart-container">
-                            {selectedAudio.espectro_modificado && (
+                            </div>
+                        )}
+                        {selectedAudio.espectro_modificado && (
+                             <div className="chart-container">
                                 <GraficoEspectro
                                     spectrumData={selectedAudio.espectro_modificado}
                                     chartTitle="Espectro Procesado"
                                 />
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                     <div className="selected-audio-details-actions">
                         <button onClick={(e) => handleDeleteAudio(selectedAudio.id, e)} className="delete-button delete-button-large">
-                            Eliminar Audio
+                            Eliminar Audio Permanentemente
                         </button>
                     </div>
                 </div>
