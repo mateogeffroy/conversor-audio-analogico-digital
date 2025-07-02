@@ -1,7 +1,28 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import '../styles/Conversor.css';
 import GraficoEspectro from './GraficoEspectro';
 import { useNavigate } from 'react-router-dom';
+
+// Componente para el ícono del lápiz
+const PencilIcon = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="#555555">
+        <path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+    </svg>
+);
+
+// Funciones auxiliares para manejar nombres de archivo y extensiones
+const getFileExtension = (name) => {
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot === -1) return '';
+    return name.substring(lastDot);
+};
+
+const getFileNameWithoutExtension = (name) => {
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot === -1) return name;
+    return name.substring(0, lastDot);
+};
+
 
 /*
 Componente Conversor.
@@ -39,6 +60,23 @@ function Conversor() {
   const [isProcessing, setIsProcessing] = useState(false);
   //Hook para la navegación programática.
   const navigate = useNavigate();
+
+  //Estado para el nombre del archivo editable
+  const [fileName, setFileName] = useState('');
+  //Nuevo estado para controlar el modo de edición del nombre
+  const [isEditingName, setIsEditingName] = useState(false);
+
+
+  //Efecto para actualizar el nombre del archivo cuando se graba o se sube un audio
+  useEffect(() => {
+    if (uploadedFile) {
+      setFileName(uploadedFile.name);
+    } else if (audioBlob) {
+      setFileName(`Mi Grabación ${new Date().toLocaleString()}.webm`);
+    }
+    // Al cargar un nuevo audio, salimos del modo de edición
+    setIsEditingName(false);
+  }, [uploadedFile, audioBlob]);
 
   // Opciones disponibles para la tasa de muestreo.
   const sampleRates = [
@@ -200,14 +238,7 @@ function Conversor() {
       return;
     }
 
-    let inputFileName;
-    if (audioBlob) {
-        inputFileName = `grabacion_${Date.now()}.webm`;
-    } else if (uploadedFile) {
-        inputFileName = uploadedFile.name;
-    } else {
-        return;
-    }
+    const inputFileName = fileName || (audioBlob ? `grabacion_${Date.now()}.webm` : uploadedFile.name);
 
     const formData = new FormData();
     formData.append('audio_file', audioData, inputFileName);
@@ -300,26 +331,51 @@ function Conversor() {
   // Verifica si hay un audio cargado o grabado.
   const hasAudio = audioBlob || uploadedFile;
 
+
+  const renderFileNameEditor = () => {
+    return (
+      <div className="rename-wrapper">
+        {isEditingName ? (
+          // MODO EDICIÓN
+          <div className="rename-container-editing">
+            <input
+              type="text"
+              className="rename-input"
+              value={getFileNameWithoutExtension(fileName)}
+              onChange={(e) => {
+                const baseName = e.target.value;
+                const extension = getFileExtension(fileName);
+                setFileName(baseName + extension);
+              }}
+              autoFocus
+            />
+            <button className="conversor-boton save-name-button" onClick={() => setIsEditingName(false)}>
+              Guardar
+            </button>
+          </div>
+        ) : (
+          // MODO VISUALIZACIÓN
+          <div className="rename-container-display">
+            <span className="file-name-display">{fileName}</span>
+            <button className="edit-name-button" onClick={() => setIsEditingName(true)}>
+              <PencilIcon />
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+
   return (
     <div className="conversor-wrapper">
-      {!hasAudio && (
-        <div className="biblioteca-link-container">
-          <button
-            className='conversor-boton conversor-boton-secundario'
-            onClick={() => navigate('/biblioteca')}
-            disabled={isLoading}
-          >
-            Ver Biblioteca de Audios
-          </button>
-        </div>
-      )}
-
       {!isLoading && !processedAudioPreviewSrc && (
         <>
           {!hasAudio ? (
             <div className="conversor-container">
               <h2 className='conversor-titulo'>Subir o Grabar Audio</h2>
               <div className='conversor-container-botones'>
+                <label htmlFor="conversor-boton" className='conversor-label-boton'>{isRecording ? 'Grabando...' : 'Grabar audio:'}</label>
                 <button
                   className='conversor-boton'
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
@@ -328,7 +384,6 @@ function Conversor() {
                 >
                   {isRecording ? 'Detener Grabación' : 'Iniciar Grabación'}
                 </button>
-                <label htmlFor="conversor-boton" className='conversor-label-boton'>{isRecording ? 'Grabando...' : ''}</label>
               </div>
               <hr className='conversor-hr' />
               <div
@@ -357,9 +412,10 @@ function Conversor() {
               <div className="conversor-container">
                 {audioBlob && (
                   <>
+                    <h2 className="conversor-titulo">Audio Grabado</h2>
+                    {renderFileNameEditor()}
                     <div className='conversor-audio-player-wrapper'>
                       <div className='conversor-audio-player-container'>
-                        <h2 className="conversor-titulo">Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</h2>
                         <audio className="conversor-audio" src={originalAudioSrc} controls />
                       </div>
                       <button className='conversor-boton conversor-boton-secundario' onClick={handleClearAudio} disabled={isLoading}>
@@ -370,7 +426,8 @@ function Conversor() {
                 )}
                 {uploadedFile && (
                   <>
-                    <h2 className="conversor-titulo">Archivo Subido: {uploadedFile.name}</h2>
+                    <h2 className="conversor-titulo">Audio Subido</h2>
+                    {renderFileNameEditor()}
                     <div className='conversor-audio-player-wrapper'>
                       <div className='conversor-audio-player-container'>
                         <audio className="conversor-audio" src={originalAudioSrc} controls />

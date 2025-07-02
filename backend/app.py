@@ -368,6 +368,27 @@ def get_converted_audios():
         app.logger.error(traceback.format_exc())
         return jsonify({"error": f"Error interno al obtener la biblioteca de audios. Detalles: {str(e)}"}), 500
 
+@app.route('/api/rename_audio/<string:audio_id>', methods=['PUT'])
+def rename_audio(audio_id):
+    data = request.get_json()
+    new_name = data.get('newName')
+
+    if not new_name:
+        return jsonify({"error": "No se proporcionó un nuevo nombre"}), 400
+
+    try:
+        # Actualiza la fila en la tabla 'audios_convertidos' donde el id coincida
+        response = supabase.table("audios_convertidos").update({"nombre_archivo_original": new_name}).eq("id", audio_id).execute()
+
+        if response.data:
+            return jsonify({"message": "Nombre actualizado exitosamente", "updated_audio": response.data[0]}), 200
+        else:
+            return jsonify({"error": "No se encontró el audio o no se pudo actualizar"}), 404
+
+    except Exception as e:
+        app.logger.error(f"Error al renombrar audio: {str(e)}")
+        return jsonify({"error": "Error interno del servidor"}), 500
+
 if __name__ == '__main__':
     #Inicia la aplicacion Flask en modo depuracion
     app.run(debug=True, host='0.0.0.0', port=5000)

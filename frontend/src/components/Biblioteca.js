@@ -3,6 +3,28 @@ import { useNavigate } from 'react-router-dom';
 import GraficoEspectro from './GraficoEspectro';
 import '../styles/Biblioteca.css';
 
+// Un simple ícono de lápiz en formato SVG que usaremos
+const PencilIcon = () => (
+    <svg className="pencil-icon" xmlns="http://www.w3.org/2000/svg" height="20px" viewBox="0 0 24 24" width="20px" fill="#555555">
+      <path d="M0 0h24v24H0z" fill="none"/><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+    </svg>
+);
+
+// Funciones auxiliares para manejar nombres de archivo y extensiones
+const getFileExtension = (name) => {
+    if (!name) return '';
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot === -1) return '';
+    return name.substring(lastDot);
+};
+
+const getFileNameWithoutExtension = (name) => {
+    if (!name) return '';
+    const lastDot = name.lastIndexOf('.');
+    if (lastDot === -1) return name;
+    return name.substring(0, lastDot);
+};
+
 /*
 Componente Biblioteca para mostrar y gestionar audios convertidos.
 Permite visualizar una lista de audios, ver sus detalles (incluyendo espectros),
@@ -17,8 +39,11 @@ function Biblioteca() {
     const [error, setError] = useState(null);
     //Estado para el audio seleccionado actualmente, si se estan viendo sus detalles
     const [selectedAudio, setSelectedAudio] = useState(null);
+    
+    //Nuevos estados para la funcionalidad de renombrar
+    const [isEditingName, setIsEditingName] = useState(false);
+    const [newName, setNewName] = useState("");
 
-    //Hook para la navegacion
     const navigate = useNavigate();
 
     //Funcion asincronica para obtener la lista de audios desde el backend
@@ -50,11 +75,59 @@ function Biblioteca() {
 
     const handleSelectAudio = (audio) => {
         setSelectedAudio(audio);
+        // Al seleccionar un audio, inicializamos el 'newName' con el nombre actual
+        setNewName(audio.nombre_archivo_original || '');
+        setIsEditingName(false); // Nos aseguramos de no estar en modo edición al principio
     };
 
     //Maneja el regreso a la vista de la lista de audios desde la vista de detalles
     const handleBackToList = () => {
         setSelectedAudio(null);
+        setIsEditingName(false); // Reseteamos el modo edición al volver
+    };
+
+    // Nueva función para manejar el guardado del nuevo nombre
+    const handleSaveName = async () => {
+        if (!selectedAudio || !newName.trim()) return;
+
+        // Evita hacer una llamada a la API si el nombre no ha cambiado
+        if (newName.trim() === selectedAudio.nombre_archivo_original) {
+            setIsEditingName(false);
+            return;
+        }
+
+        const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
+        const renameUrl = `${apiBaseUrl}/api/rename_audio/${selectedAudio.id}`;
+
+        try {
+            const response = await fetch(renameUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ newName: newName.trim() })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Error al renombrar');
+            }
+            
+            // Actualizar el estado local para reflejar el cambio inmediatamente
+            const updatedAudio = result.updated_audio;
+            setSelectedAudio(updatedAudio);
+
+            // Actualizar la lista principal de audios también
+            setAudios(prevAudios => prevAudios.map(audio => 
+                audio.id === updatedAudio.id ? updatedAudio : audio
+            ));
+
+            setIsEditingName(false); // Salir del modo edición
+            alert("Nombre actualizado con éxito.");
+
+        } catch (error) {
+            console.error("Error al guardar el nuevo nombre:", error);
+            alert(`No se pudo actualizar el nombre: ${error.message}`);
+        }
     };
 
     /*
@@ -93,7 +166,7 @@ function Biblioteca() {
 
         } catch (error) {
             console.error(`Error al descargar el audio en formato ${format} desde la biblioteca:`, error);
-            alert(`Ocurrió un error al descargar el audio en formato ${format} desde la biblioteca.`);
+            alert(`Ocurrió un error al descargar el audio en formato ${format}.`);
         }
     };
 
@@ -135,8 +208,8 @@ function Biblioteca() {
 
     return (
         <div className="biblioteca-wrapper">
-            <button className="back-button" onClick={() => navigate('/')}>
-                ← Volver al Conversor
+             <button className="back-button" onClick={selectedAudio ? handleBackToList : () => navigate('/')}>
+                {selectedAudio ? '← Volver a la lista' : '← Volver al Conversor'}
             </button>
 
             {!selectedAudio ? (
@@ -167,11 +240,32 @@ function Biblioteca() {
                 </div>
             ) : (
                 <div className="selected-audio-details">
-                    <button className="back-to-list-button" onClick={handleBackToList}>
-                        ← Volver a la lista
-                    </button>
-                    <h2 className='biblioteca-titulo'>Detalles del Audio</h2>
-                    <p className='selected-audio-filename'>{selectedAudio.nombre_archivo_original || `Audio ${selectedAudio.id.substring(0, 8)}`}</p>
+                    <div className="details-header">
+                      {isEditingName ? (
+                        <div className="rename-container-editing">
+                          <input 
+                            type="text"
+                            className="rename-input"
+                            value={getFileNameWithoutExtension(newName)}
+                            onChange={(e) => {
+                                const baseName = e.target.value;
+                                const extension = getFileExtension(selectedAudio.nombre_archivo_original);
+                                setNewName(baseName + extension);
+                            }}
+                            onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                            autoFocus
+                          />
+                          <button className="conversor-boton save-button" onClick={handleSaveName}>Guardar</button>
+                        </div>
+                      ) : (
+                        <h2 className='biblioteca-titulo'>
+                          <span>{selectedAudio.nombre_archivo_original || `Audio ${selectedAudio.id.substring(0, 8)}`}</span>
+                          <button className="edit-name-button" onClick={() => setIsEditingName(true)}>
+                            <PencilIcon />
+                          </button>
+                        </h2>
+                      )}
+                    </div>
 
                     <div className="details-section">
                         <h4>Audio Procesado</h4>

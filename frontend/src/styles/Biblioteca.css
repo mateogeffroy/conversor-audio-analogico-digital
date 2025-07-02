@@ -27,6 +27,11 @@
   color: #333;
   margin: 0 0 25px 0;
   font-size: 1.8em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  word-break: break-all;
 }
 
 .loading-message, .error-message, .empty-message {
@@ -122,6 +127,23 @@
   background-color: var(--color-primary-dark);
 }
 
+.conversor-boton-secundario {
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 0.9em;
+  font-weight: 500;
+  transition: all 0.2s ease-in-out;
+}
+
+.conversor-boton-secundario:hover {
+  background-color: var(--color-primary);
+  color: var(--color-text-light);
+}
+
 .delete-button {
   background-color: var(--color-danger);
   color: var(--color-text-light);
@@ -131,13 +153,13 @@
   background-color: var(--color-danger-dark);
 }
 
-.selected-audio-filename {
+.details-header {
   text-align: center;
-  font-size: 1.2em;
-  color: #555;
-  margin-top: -15px;
   margin-bottom: 25px;
-  word-break: break-all;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .details-section {
@@ -200,6 +222,47 @@
   padding: 12px 25px;
   font-size: 1em;
 }
+
+.edit-name-button {
+  background: transparent;
+  border: none;
+  padding: 5px;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.edit-name-button:hover {
+  background-color: #f0f0f0;
+}
+
+.pencil-icon {
+  flex-shrink: 0;
+}
+
+.rename-container-editing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.rename-input {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  flex-grow: 1;
+  max-width: 400px;
+  font-size: 1em;
+}
+
+.save-button {
+  flex-shrink: 0;
+}
+
 
 @media (max-width: 768px) {
   .audio-item {

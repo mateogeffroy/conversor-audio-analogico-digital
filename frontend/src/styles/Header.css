@@ -19,21 +19,23 @@
 }
 
 .header-titulo {
-  font-size: 1.6em;
+  font-size: 1.4em;
   margin: 0;
-  flex-grow: 1;
-  text-align: center;
+  white-space: nowrap;
 }
 
 .header-nav {
   display: flex;
+  align-items: center;
+  gap: 25px;
+  margin-left: auto;
 }
 
 .header-link {
   color: white;
-  margin: 0 15px;
   text-decoration: none;
   font-size: 1.1em;
+  font-weight: 500;
   white-space: nowrap;
 }
 
@@ -41,31 +43,59 @@
   text-decoration: underline;
 }
 
+.header-biblioteca-button {
+  background-color: #8D021F;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  text-decoration: none;
+  font-size: 1.1em;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+}
+
+.header-biblioteca-button:hover {
+  background-color: #640216;
+  transform: scale(1.05);
+}
+
+
 /* Media Query para Tabletas y Móviles */
+@media (max-width: 992px) {
+  .header-titulo {
+    display: none;
+  }
+}
+
 @media (max-width: 768px) {
   .header {
     flex-direction: column;
     padding: 20px 15px;
     text-align: center;
+    gap: 15px;
   }
 
   .header-icono {
-    margin: 0 0 15px 0;
-  }
-
-  .header-titulo {
-    font-size: 1.3em;
-    margin-bottom: 15px;
-    line-height: 1.2;
+    margin: 0;
   }
 
   .header-nav {
     width: 100%;
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-left: 0;
   }
 
   .header-link {
-    margin: 0 10px;
     font-size: 1em;
+  }
+
+  .header-biblioteca-button {
+    font-size: 1em;
+    width: 100%;
+    max-width: 250px;
+    order: 3; /* Asegura que el botón aparezca al final en el layout de columna */
   }
 }
