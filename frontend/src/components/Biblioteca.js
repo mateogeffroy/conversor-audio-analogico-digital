@@ -1,49 +1,66 @@
-// frontend/src/components/Biblioteca.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import GraficoEspectro from './GraficoEspectro';
 import '../styles/Biblioteca.css';
 
+/*
+Componente Biblioteca para mostrar y gestionar audios convertidos.
+Permite visualizar una lista de audios, ver sus detalles (incluyendo espectros),
+descargarlos en diferentes formatos y eliminarlos.
+*/
 function Biblioteca() {
+    //Estado para almacenar la lista de audios
     const [audios, setAudios] = useState([]);
+    //Estado para indicar si los audios estan cargando
     const [loading, setLoading] = useState(true);
+    //Estado para almacenar cualquier error que ocurra durante la carga o eliminacion
     const [error, setError] = useState(null);
+    //Estado para el audio seleccionado actualmente, si se estan viendo sus detalles
     const [selectedAudio, setSelectedAudio] = useState(null);
 
+    //Hook para la navegacion
     const navigate = useNavigate();
 
-    // Función para recargar los audios (útil después de eliminar)
-    const fetchAudios = async () => {
+    //Funcion asincronica para obtener la lista de audios desde el backend
+    const fetchAudios = useCallback(async () => {
         try {
-            setLoading(true); // Opcional: mostrar spinner al recargar
+            setLoading(true);
             const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
             const response = await fetch(`${apiBaseUrl}/api/library`);
+            
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
+            
             const data = await response.json();
             setAudios(data);
-            setError(null); // Limpiar errores previos si la recarga es exitosa
+            setError(null);
         } catch (err) {
             setError("No se pudieron cargar los audios. " + err.message);
             console.error("Error fetching library:", err);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
+    //Efecto para cargar los audios cuando el componente se monta
     useEffect(() => {
         fetchAudios();
-    }, []);
+    }, [fetchAudios]);
 
     const handleSelectAudio = (audio) => {
         setSelectedAudio(audio);
     };
 
+    //Maneja el regreso a la vista de la lista de audios desde la vista de detalles
     const handleBackToList = () => {
         setSelectedAudio(null);
     };
 
+    /*
+    Maneja la descarga de un audio desde la biblioteca.
+    Envía una solicitud al backend para descargar el archivo en el formato especificado.
+    */
     const handleDownloadFromLibrary = async (audioUrl, filenameBase, format) => {
         const apiBaseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000';
         const downloadUrl = `${apiBaseUrl}/api/download_audio?audio_url=${encodeURIComponent(audioUrl)}&format=${format}`;
@@ -80,9 +97,10 @@ function Biblioteca() {
         }
     };
 
-    // NUEVA FUNCIÓN: Manejar la eliminación de un audio
+    //Maneja la eliminación de un audio de la base de datos y Supabase Storage
     const handleDeleteAudio = async (audioId, event) => {
-        event.stopPropagation(); // Evitar que el clic en el botón active handleSelectAudio
+        event.stopPropagation();
+
         if (!window.confirm("¿Estás seguro de que quieres eliminar este audio? Esta acción es irreversible.")) {
             return;
         }
@@ -99,8 +117,8 @@ function Biblioteca() {
             }
 
             alert("Audio eliminado exitosamente.");
-            setSelectedAudio(null); // Volver a la lista si estábamos viendo los detalles del audio eliminado
-            fetchAudios(); // Recargar la lista de audios
+            setSelectedAudio(null);
+            fetchAudios();
         } catch (err) {
             console.error("Error al eliminar el audio:", err);
             alert(`Ocurrió un error al eliminar el audio: ${err.message}`);
@@ -129,8 +147,8 @@ function Biblioteca() {
                     ) : (
                         <ul className="audio-list">
                             {audios.map((audio) => (
-                                <li key={audio.id} className="audio-item"> {/* Eliminar onClick del li si el botón de eliminar está dentro */}
-                                    <div onClick={() => handleSelectAudio(audio)}> {/* Mover onClick al div interno */}
+                                <li key={audio.id} className="audio-item">
+                                    <div onClick={() => handleSelectAudio(audio)}>
                                         <h3>{audio.nombre_archivo_original || `Audio ${audio.id.substring(0, 8)}`}</h3>
                                         <p>Fecha: {new Date(audio.fecha_creacion).toLocaleString()}</p>
                                     </div>
@@ -204,7 +222,7 @@ function Biblioteca() {
                             )}
                         </div>
                     </div>
-                     <div className="selected-audio-details-actions"> {/* Contenedor para el botón de eliminar en detalles */}
+                    <div className="selected-audio-details-actions">
                         <button onClick={(e) => handleDeleteAudio(selectedAudio.id, e)} className="delete-button delete-button-large">
                             Eliminar Audio
                         </button>

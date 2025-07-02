@@ -2,7 +2,10 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import '../styles/Documentacion.css';
 
-// SVG de una flecha hacia abajo (puedes reemplazarlo con tu propio SVG o ruta a una imagen)
+/*
+Componente ArrowDownIcon.
+Representa un ícono de flecha hacia abajo.
+*/
 const ArrowDownIcon = () => (
     <svg 
         className="scroll-arrow" 
@@ -14,6 +17,10 @@ const ArrowDownIcon = () => (
     </svg>
 );
 
+/*
+Componente Documentacion.
+Muestra información sobre el proyecto, tecnologías y herramientas utilizadas.
+*/
 function Documentacion() {
     return (
         <div className="home">
@@ -27,7 +34,6 @@ function Documentacion() {
             </div>
 
             <div className='container-tecnologias'>
-                {/* Las imágenes ahora deben ser accesibles desde la carpeta 'public' */}
                 <h1>Tecnologías Utilizadas</h1>
                 <div className='tecnologias-utilizadas'>
                     <div className='react-div'>

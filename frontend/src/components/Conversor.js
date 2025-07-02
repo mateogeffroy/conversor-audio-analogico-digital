@@ -3,42 +3,72 @@ import '../styles/Conversor.css';
 import GraficoEspectro from './GraficoEspectro';
 import { useNavigate } from 'react-router-dom';
 
+/*
+Componente Conversor.
+Permite grabar o subir audio, aplicar conversión de tasa de muestreo y profundidad de bits,
+y visualizar los espectros de audio original y procesado. También permite descargar el resultado.
+*/
 function Conversor() {
-  //Estados para el manejo dinamico de la webapp
+  //Estados para controlar la grabación de audio.
   const [isRecording, setIsRecording] = useState(false);
+  //Almacena el audio grabado como un Blob.
   const [audioBlob, setAudioBlob] = useState(null);
+  //Almacena el archivo de audio subido por el usuario.
   const [uploadedFile, setUploadedFile] = useState(null);
-  // ELIMINAR O COMENTAR esta línea, ya no necesitamos exportFormat aquí
-  // const [exportFormat, setExportFormat] = useState('wav'); 
+  //Tasa de muestreo objetivo para la conversión.
   const [targetSampleRate, setTargetSampleRate] = useState('');
+  //Profundidad de bits objetivo para la conversión.
   const [targetBitDepth, setTargetBitDepth] = useState('');
+  //Referencia para el objeto MediaRecorder para grabar.
   const mediaRecorderRef = useRef(null);
+  //Array para almacenar los trozos de audio grabados.
   const audioChunksRef = useRef([]);
+  //Indica si la aplicación está realizando una operación de carga (general).
   const [isLoading, setIsLoading] = useState(false);
+  //Datos del espectro de frecuencia del audio original.
   const [originalSpectrumData, setOriginalSpectrumData] = useState(null);
+  //Datos del espectro de frecuencia del audio procesado.
   const [processedSpectrumData, setProcessedSpectrumData] = useState(null);
+  //URL de previsualización para el audio procesado.
   const [processedAudioPreviewSrc, setProcessedAudioPreviewSrc] = useState(null);
-  // processedAudioInfo ahora solo necesita la URL del WAV procesado en Supabase
+  //Información del audio procesado (ej. URL de Supabase para el WAV).
   const [processedAudioInfo, setProcessedAudioInfo] = useState(null); 
+  //Estado para el efecto visual de arrastrar y soltar.
   const [isDragging, setIsDragging] = useState(false);
+  //Indica si el audio está en proceso de conversión.
   const [isProcessing, setIsProcessing] = useState(false);
+  //Hook para la navegación programática.
   const navigate = useNavigate();
 
+  // Opciones disponibles para la tasa de muestreo.
   const sampleRates = [
     { value: '', label: 'Original' }, { value: '8000', label: '8 kHz' }, { value: '16000', label: '16 kHz' }, { value: '44100', label: '44.1 kHz' }, { value: '96000', label: '96 kHz' },
   ];
+  // Opciones disponibles para la profundidad de bits.
   const bitDepths = [
     { value: '', label: 'Original' }, { value: '8', label: '8 bits' }, { value: '16', label: '16 bits' }, { value: '24', label: '24 bits' },
   ];
 
+  /*
+  Maneja el evento de arrastrar sobre la zona de soltar.
+  Activa el indicador visual de arrastre.
+  */
   const handleDragOver = (event) => {
     event.preventDefault();
     setIsDragging(true);
   };
+  /*
+  Maneja el evento de dejar de arrastrar sobre la zona de soltar.
+  Desactiva el indicador visual de arrastre.
+  */
   const handleDragLeave = (event) => {
     event.preventDefault();
     setIsDragging(false);
   };
+  /*
+  Maneja el evento de soltar un archivo.
+  Si es un audio, lo establece como el archivo subido.
+  */
   const handleDrop = (event) => {
     event.preventDefault();
     setIsDragging(false);
@@ -56,30 +86,34 @@ function Conversor() {
     }
   };
 
+  /*
+  Restablece todos los estados relacionados con el audio y el procesamiento
+  para preparar una nueva operación.
+  */
   const resetStateForNewAudio = () => {
     setIsLoading(false);
     setOriginalSpectrumData(null);
     setProcessedSpectrumData(null);
     setProcessedAudioPreviewSrc(null);
     setProcessedAudioInfo(null);
-    // Asegurarse de que el procesamiento también se resetee
     setIsProcessing(false);
   };
 
+  /*
+  Inicia la grabación de audio desde el micrófono del usuario.
+  Configura el MediaRecorder y sus eventos.
+  */
   const handleStartRecording = async () => {
-    // Es crucial detener cualquier stream anterior antes de solicitar uno nuevo
     if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
-    resetStateForNewAudio(); // Limpiar estados anteriores ANTES de grabar
+    resetStateForNewAudio();
 
     try {
-      // Solicitar stream del micrófono
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      // Guardar el stream en la referencia para poder detenerlo más tarde
-      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' }); // Define options aquí mismo
+      mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm;codecs=opus' });
 
-      audioChunksRef.current = []; // Limpiar chunks anteriores
+      audioChunksRef.current = [];
       
       mediaRecorderRef.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -90,37 +124,39 @@ function Conversor() {
       mediaRecorderRef.current.onstop = () => {
         const blob = new Blob(audioChunksRef.current, { type: mediaRecorderRef.current.mimeType });
         setAudioBlob(blob);
-        // Detener el stream del micrófono una vez que la grabación ha finalizado
         stream.getTracks().forEach(track => track.stop());
-        setIsRecording(false); // Asegurarse de que el estado de grabación se actualice
+        setIsRecording(false);
       };
 
       mediaRecorderRef.current.onerror = (event) => {
         console.error("MediaRecorder error:", event.error);
         setIsRecording(false);
-        // También detén el stream en caso de error
         stream.getTracks().forEach(track => track.stop());
         alert("Error al grabar el audio. Asegúrate de que el micrófono esté disponible.");
       };
 
       mediaRecorderRef.current.start();
       setIsRecording(true);
-      // No limpiar audioBlob/uploadedFile aquí, ya se hizo en resetStateForNewAudio()
     } catch (err) {
       console.error("Error al acceder al micrófono:", err);
-      setIsRecording(false); // Asegúrate de restablecer el estado si falla el acceso
+      setIsRecording(false);
       alert("No se pudo acceder al micrófono. Por favor, asegúrate de haber otorgado los permisos.");
     }
   };
 
+  /*
+  Detiene la grabación de audio en curso.
+  */
   const handleStopRecording = () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
       mediaRecorderRef.current.stop();
-      // El setIsRecording(false) y stream.getTracks().forEach(track => track.stop());
-      // ahora se manejan en el onstop del MediaRecorder, lo que es más robusto.
     }
   };
 
+  /*
+  Maneja la selección de un archivo de audio del sistema del usuario.
+  Restablece estados y guarda el archivo.
+  */
   const handleFileChange = (event) => {
     resetStateForNewAudio();
     const file = event.target.files[0];
@@ -130,13 +166,15 @@ function Conversor() {
     }
   };
 
+  /*
+  Limpia el audio actual (grabado o subido) y restablece los estados
+  para empezar de nuevo. Detiene cualquier grabación activa.
+  */
   const handleClearAudio = () => {
-    // Asegurarse de detener cualquier grabación activa antes de limpiar
     if (isRecording && mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
         mediaRecorderRef.current.stop();
     }
-    // Detener cualquier stream del micrófono que pueda estar activo (después de grabación)
-    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) { // Check for stream property
+    if (mediaRecorderRef.current && mediaRecorderRef.current.stream) {
         mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
 
@@ -145,36 +183,34 @@ function Conversor() {
     resetStateForNewAudio();
   };
 
+  /*
+  Envía el audio seleccionado o grabado al backend para su procesamiento.
+  Muestra indicadores de carga y procesamiento.
+  */
   const handleSubmitAudio = async () => {
-    if (isLoading || isProcessing) return; // Evita envíos múltiples si ya se está cargando o procesando
-    setIsLoading(true); // Activa el estado de carga general
-    setIsProcessing(true); // Activa el estado de procesamiento específico
+    if (isLoading || isProcessing) return;
+    setIsLoading(true);
+    setIsProcessing(true);
 
     let audioData = audioBlob || uploadedFile;
     if (!audioData) {
-      // Puedes añadir un mensaje al usuario aquí
       alert("Por favor, graba o selecciona un archivo de audio antes de procesar.");
       setIsLoading(false);
       setIsProcessing(false);
       return;
     }
 
-    // Asegurarse de que el inputFileName tenga una extensión
     let inputFileName;
     if (audioBlob) {
-        // Para grabaciones, usa un nombre con extensión webm
         inputFileName = `grabacion_${Date.now()}.webm`;
     } else if (uploadedFile) {
         inputFileName = uploadedFile.name;
     } else {
-        // Esto no debería pasar si audioData ya fue verificado
         return;
     }
 
     const formData = new FormData();
-    formData.append('audio_file', audioData, inputFileName); // Asegúrate de que el tercer argumento (filename) tenga extensión
-    // ELIMINAR O COMENTAR esta línea, ya no necesitamos enviar export_format aquí
-    // formData.append('export_format', exportFormat); 
+    formData.append('audio_file', audioData, inputFileName);
     if (targetSampleRate) {
       formData.append('sample_rate', targetSampleRate);
     }
@@ -192,10 +228,8 @@ function Conversor() {
       if (response.ok) {
         setOriginalSpectrumData(result.original_spectrum);
         setProcessedSpectrumData(result.processed_spectrum);
-        // processed_audio_url_supabase_wav es la nueva clave para la URL del WAV en Supabase
         const audioSrc = result.processed_audio_url_supabase_wav; 
         setProcessedAudioPreviewSrc(audioSrc);
-        // processedAudioInfo ahora solo necesita la URL del WAV en Supabase
         setProcessedAudioInfo({ 
             supabaseWavUrl: result.processed_audio_url_supabase_wav 
         });
@@ -218,7 +252,11 @@ function Conversor() {
     }
   };
 
-  // NUEVA FUNCIÓN: Para manejar la descarga de audio en un formato específico
+  /*
+  Maneja la descarga del audio procesado en un formato específico (WAV o MP3).
+  Realiza una solicitud al backend para obtener el archivo.
+  @param {string} format - El formato deseado para la descarga ('wav' o 'mp3').
+  */
   const handleDownloadProcessedAudio = async (format) => {
     if (!processedAudioInfo || !processedAudioInfo.supabaseWavUrl) return;
 
@@ -231,9 +269,8 @@ function Conversor() {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Obtener el nombre de archivo del encabezado Content-Disposition
         const contentDisposition = response.headers.get('Content-Disposition');
-        let filename = `processed_audio.${format}`; // Fallback filename
+        let filename = `processed_audio.${format}`;
         if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="(.+)"/);
             if (filenameMatch && filenameMatch[1]) {
@@ -258,7 +295,9 @@ function Conversor() {
     }
   };
 
+  // Determina la fuente del audio original para la previsualización.
   const originalAudioSrc = audioBlob ? URL.createObjectURL(audioBlob) : (uploadedFile ? URL.createObjectURL(uploadedFile) : null);
+  // Verifica si hay un audio cargado o grabado.
   const hasAudio = audioBlob || uploadedFile;
 
   return (
@@ -302,7 +341,7 @@ function Conversor() {
               </div>
               <div className='conversor-container-botones' style={{marginBottom: '20px'}}>
                 <button
-                  className='conversor-boton conversor-boton-secundario' // Usa la clase de botón secundario que ya tienes en CSS
+                  className='conversor-boton conversor-boton-secundario'
                   onClick={() => navigate('/biblioteca')}
                   disabled={isLoading}
                 >
@@ -355,20 +394,7 @@ function Conversor() {
                       {bitDepths.map(depth => (<option key={depth.value} value={depth.value}>{depth.label}</option>))}
                     </select>
                   </div>
-                  {/* ELIMINAR O COMENTAR este div del formato de exportación */}
-                  {/*
-                  <div className="conversor-form-group">
-                    <label className="conversor-label">Formato de Exportación:</label>
-                    <div className='conversor-radio-group'>
-                      <label className="conversor-radio-label">
-                        <input className="conversor-radio" type="radio" name="exportFormat" value="wav" checked={exportFormat === 'wav'} onChange={(e) => setExportFormat(e.target.value)} disabled={isLoading} /> WAV
-                      </label>
-                      <label className="conversor-radio-label">
-                        <input className="conversor-radio" type="radio" name="exportFormat" value="mp3" checked={exportFormat === 'mp3'} onChange={(e) => setExportFormat(e.target.value)} disabled={isLoading} /> MP3
-                      </label>
-                    </div>
-                  </div>
-                  */}
+                  {/* ELIMINADO: Este div del formato de exportación ya no es necesario aquí. */}
                 </div>
                 <div className="conversor-process-button-container">
                   <button className='conversor-boton' onClick={() => { handleSubmitAudio(); setIsProcessing(true); }} disabled={isLoading}>Procesar Audio</button>
@@ -407,14 +433,12 @@ function Conversor() {
           </div>
 
           <div className='conversor-container-botones'>
-            {/* NUEVOS BOTONES DE DESCARGA */}
             <button className='conversor-boton' onClick={() => handleDownloadProcessedAudio('wav')}>
               Descargar WAV
             </button>
             <button className='conversor-boton' onClick={() => handleDownloadProcessedAudio('mp3')}>
               Descargar MP3
             </button>
-            {/* FIN NUEVOS BOTONES DE DESCARGA */}
             <button className="conversor-boton-secundario" onClick={handleClearAudio}>
               Procesar Otro Audio
             </button>
