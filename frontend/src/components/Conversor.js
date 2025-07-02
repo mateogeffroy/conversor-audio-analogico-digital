@@ -320,7 +320,6 @@ function Conversor() {
             <div className="conversor-container">
               <h2 className='conversor-titulo'>Subir o Grabar Audio</h2>
               <div className='conversor-container-botones'>
-                <label htmlFor="conversor-boton" className='conversor-label-boton'>Grabar audio:</label>
                 <button
                   className='conversor-boton'
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
@@ -329,6 +328,7 @@ function Conversor() {
                 >
                   {isRecording ? 'Detener Grabación' : 'Iniciar Grabación'}
                 </button>
+                <label htmlFor="conversor-boton" className='conversor-label-boton'>{isRecording ? 'Grabando...' : ''}</label>
               </div>
               <hr className='conversor-hr' />
               <div
@@ -357,9 +357,9 @@ function Conversor() {
               <div className="conversor-container">
                 {audioBlob && (
                   <>
-                    <h2 className="conversor-titulo">Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</h2>
                     <div className='conversor-audio-player-wrapper'>
                       <div className='conversor-audio-player-container'>
+                        <h2 className="conversor-titulo">Audio Grabado (Tipo: {audioBlob.type.split('/')[1]?.split(';')[0].toUpperCase()})</h2>
                         <audio className="conversor-audio" src={originalAudioSrc} controls />
                       </div>
                       <button className='conversor-boton conversor-boton-secundario' onClick={handleClearAudio} disabled={isLoading}>

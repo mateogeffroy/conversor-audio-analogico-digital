@@ -10,6 +10,7 @@ from supabase import create_client, Client
 import uuid
 import soundfile as sf
 import subprocess
+import tempfile
 
 #Carga las variables de entorno desde el archivo backend/.env
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -131,11 +132,12 @@ def upload_audio():
     nombre_archivo_original = file.filename
     
     #Rutas temporales para el procesamiento de archivos
-    temp_input_path = f"/tmp/{uuid.uuid4().hex}_input.{file.filename.split('.')[-1] if '.' in file.filename else 'tmp'}"
+    temp_dir = tempfile.gettempdir()
+    temp_input_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_input.{file.filename.split('.')[-1] if '.' in file.filename else 'tmp'}")
     file.save(temp_input_path)
     
-    temp_original_wav_path = f"/tmp/{uuid.uuid4().hex}_original.wav"
-    temp_processed_wav_path = f"/tmp/{uuid.uuid4().hex}_processed.wav"
+    temp_original_wav_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_original.wav")
+    temp_processed_wav_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_processed.wav")
 
     try:
         #Convierte el audio original a un formato WAV estándar (PCM de 32 bits flotantes, 44.1kHz, mono)
@@ -268,6 +270,8 @@ def download_audio():
 
     temp_downloaded_wav_path = None
     output_converted_path = None
+    
+    temp_dir = tempfile.gettempdir()
 
     try:
         #Extrae la ruta del archivo dentro del bucket de Supabase Storage
@@ -280,7 +284,7 @@ def download_audio():
             return jsonify({"error": "No se pudo descargar el archivo de Supabase Storage."}), 500
         
         #Guarda el archivo descargado temporalmente como WAV
-        temp_downloaded_wav_path = f"/tmp/{uuid.uuid4().hex}_downloaded.wav"
+        temp_downloaded_wav_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_downloaded.wav")
         with open(temp_downloaded_wav_path, "wb") as f:
             f.write(response_download)
         
@@ -291,7 +295,7 @@ def download_audio():
         
         #Procesa y convierte el archivo según el formato solicitado
         if download_format == 'mp3':
-            output_converted_path = f"/tmp/{uuid.uuid4().hex}_output.mp3"
+            output_converted_path = os.path.join(temp_dir, f"{uuid.uuid4().hex}_output.mp3")
             
             #Comando FFmpeg para convertir a MP3
             command = [
